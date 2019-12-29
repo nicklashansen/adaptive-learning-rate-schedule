@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Bash scripts
+*.sh
+
+# Datasets
+data/cifar-10-batches-py/
+data/mnist.npz
