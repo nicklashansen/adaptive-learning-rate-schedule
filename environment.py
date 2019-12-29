@@ -113,7 +113,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             self.lr
         ], dtype=np.float32)
         reward = -np.log(val_loss.avg)
-        done = self.training_steps >= self.num_train_steps
+        done = self.training_steps > self.num_train_steps
         info = {'train_loss': train_loss.avg, 'val_loss': val_loss.avg, 'lr': self.lr}
 
         self.info_list.append(info)

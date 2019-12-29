@@ -6,6 +6,37 @@ from smallrl import algorithms, environments, networks, demos
 from environment import AdaptiveLearningRateOptimizer
 import utils
 
+from stable_baselines.common.policies import MlpPolicy
+from stable_baselines.common import make_vec_env
+from stable_baselines import PPO2
+
+
+if __name__ == '__main__':
+
+    data = utils.load_mnist(num_train=10000, num_val=1000)
+    net_fn = lambda: networks.MLP(784, 64, 10)
+    print(f'CUDA is available: {torch.cuda.is_available()}')
+    env = make_vec_env(
+        env_id=AdaptiveLearningRateOptimizer,
+        n_envs=4,
+        env_kwargs={
+            'train_dataset': data[0],
+            'val_dataset': data[1],
+            'net_fn': net_fn,
+            'batch_size': 1000,
+            'update_freq': 10,
+            'num_train_steps': 1000,
+            'initial_lr': 1e-3,
+            'device': 1 if torch.cuda.is_available() else 'cpu'
+        }
+    )
+
+    model = PPO2(MlpPolicy, env, n_cpu_tf_sess=8, verbose=1)
+    model.learn(total_timesteps=100000)
+    model.save('ppo2_alrs')
+
+
+"""
 if __name__ == '__main__':
     #data = utils.load_cifar(num_train=10000, num_val=1000)
     data = utils.load_mnist(num_train=10000, num_val=1000)
@@ -40,4 +71,4 @@ if __name__ == '__main__':
         criterion={'n': 1, 'target_reward': np.inf, 'max_episodes': 1000},
         verbose=True
     )
-    
+"""
