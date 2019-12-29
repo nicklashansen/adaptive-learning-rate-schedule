@@ -20,7 +20,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         1: Halves the LR
         2: No-op
     """
-    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, device, verbose=False):
+    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, num_devices, verbose=False):
         super().__init__()
 
         class SpecDummy():
@@ -42,12 +42,12 @@ class AdaptiveLearningRateOptimizer(gym.Env):
                 dtype=np.float32
             )
         self.initial_lr = initial_lr
-        self.device = device
+        self.num_devices = num_devices
         self.verbose = verbose
         self.info_list = []
 
         self.cuda = torch.cuda.is_available()
-        assert device == 'cpu' or (self.cuda and isinstance(device, int))
+        assert num_devices == 'cpu' or (self.cuda and isinstance(num_devices, int))
 
     
     def _update_lr(self, action, clip=True):
@@ -128,6 +128,8 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         """
         Resets the environment and returns the initial state.
         """
+        if self.cuda:
+            self.device = np.random.randint(0, self.num_devices)
         self.train_generator = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
         self.val_generator = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=True)
         self.num_train_batches = len(list(self.train_generator))

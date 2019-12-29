@@ -12,7 +12,6 @@ from stable_baselines import PPO2
 
 
 if __name__ == '__main__':
-
     data = utils.load_mnist(num_train=10000, num_val=1000)
     net_fn = lambda: networks.MLP(784, 64, 10)
     print(f'CUDA is available: {torch.cuda.is_available()}')
@@ -27,11 +26,11 @@ if __name__ == '__main__':
             'update_freq': 10,
             'num_train_steps': 1000,
             'initial_lr': 1e-3,
-            'device': 1 if torch.cuda.is_available() else 'cpu'
+            'num_devices': 4 if torch.cuda.is_available() else 'cpu'
         }
     )
 
-    model = PPO2(MlpPolicy, env, n_cpu_tf_sess=8, verbose=1)
+    model = PPO2(MlpPolicy, env, n_steps=50, learning_rate=1e-3, verbose=1)
     model.learn(total_timesteps=100000)
     model.save('ppo2_alrs')
 
