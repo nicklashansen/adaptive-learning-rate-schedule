@@ -52,7 +52,8 @@ if __name__ == '__main__':
         nminibatches=1,
         verbose=1,
         policy_kwargs={
-            'net_arch': [32, 32],
+            'act_fun': 'relu',
+            'net_arch': [64, {'pi': [32], 'vf': [32]}],
             'cnn_extractor': None
         },
         tensorboard_log='data/tensorboard/ppo2_alrs'
