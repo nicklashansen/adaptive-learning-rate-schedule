@@ -44,7 +44,7 @@ if __name__ == '__main__':
     )
 
     model = PPO2(
-        policy=MlpLstmPolicy,
+        policy=MlpPolicy,
         env=env,
         gamma=args.ppo2_gamma,
         n_steps=args.ppo2_update_freq,
@@ -52,7 +52,8 @@ if __name__ == '__main__':
         nminibatches=1,
         verbose=1,
         policy_kwargs={
-            'n_lstm': 64
+            'net_arch': [32, 32],
+            'cnn_extractor': None
         },
         tensorboard_log='data/tensorboard/ppo2_alrs'
     )

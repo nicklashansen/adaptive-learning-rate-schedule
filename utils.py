@@ -17,12 +17,12 @@ def parse_args():
 	)
 	parser.add_argument(
 		'--num-train',
-		default=20000,
+		default=50000,
 		help='number of training samples'
 	)
 	parser.add_argument(
 		'--num-val',
-		default=4000,
+		default=10000,
 		help='number of validation samples'
 	)
 	parser.add_argument(
@@ -67,7 +67,7 @@ def parse_args():
 	)
 	parser.add_argument(
 		'--ppo2-total-timesteps',
-		default=100000,
+		default=200000,
 		help='total timesteps of the PPO2 controller'
 	)
 	args = parser.parse_args()
