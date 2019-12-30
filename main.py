@@ -45,7 +45,7 @@ if __name__ == '__main__':
             'num_devices': args.num_devices
         }
     )
-    env = VecNormalize(env, norm_obs=True, norm_reward=True, gamma=args.ppo2_gamma)
+    env = VecNormalize(env, norm_obs=True, norm_reward=False, gamma=args.ppo2_gamma)
     
     env_seeds = [0, 1, 2, 3]
     for i in  range(env.num_envs):
@@ -58,7 +58,7 @@ if __name__ == '__main__':
         n_steps=args.ppo2_update_freq,
         learning_rate=args.ppo2_lr,
         nminibatches=1,
-        verbose=1,
+        verbose=0,
         policy_kwargs={
             'act_fun': tf.nn.relu,
             #'net_arch': [64, {'pi': [32], 'vf': [32]}],
