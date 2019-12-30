@@ -47,7 +47,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.info_list = []
 
         self.cuda = torch.cuda.is_available()
-        assert num_devices == 'cpu' or (self.cuda and isinstance(num_devices, int))
+        assert num_devices == 1 or self.cuda
 
     
     def _update_lr(self, action, clip=True):

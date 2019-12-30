@@ -1,7 +1,82 @@
+import argparse
 import numpy as np
 import torch
 import torchvision
 from torchvision import transforms
+
+
+def parse_args():
+	parser = argparse.ArgumentParser(description='ALRS')
+	parser.add_argument(
+		'--dataset',
+		default='mnist',
+		help='dataset to use: mnist | cifar10'
+	)
+	parser.add_argument(
+		'--num-train',
+		default=10000,
+		help='number of training samples'
+	)
+	parser.add_argument(
+		'--num-val',
+		default=1000,
+		help='number of validation samples'
+	)
+	parser.add_argument(
+		'--batch-size',
+		default=1000,
+		help='batch size used for training of trainee networks'
+	)
+	parser.add_argument(
+		'--update-freq',
+		default=10,
+		help='frequency of learning rate updates in the learned schedule'
+	)
+	parser.add_argument(
+		'--num-train-steps',
+		default=1000,
+		help='number of actionable training steps of the trainee networks'
+	)
+	parser.add_argument(
+		'--initial-lr',
+		default=1e-3,
+		help='initial learning rate of trainee networks'
+	)
+	parser.add_argument(
+		'--num-devices',
+		default='cpu',
+		help='number of devices used for training of trainee networks: cpu | 1 | 2 | 3| 4'
+	)
+	parser.add_argument(
+		'--ppo2-gamma',
+		default=0.99,
+		help='discount factor of the PPO2 controller'
+	)
+	parser.add_argument(
+		'--ppo2-update-freq',
+		default=100,
+		help='frequency of updates of the PPO2 controller'
+	)
+	parser.add_argument(
+		'--ppo2-lr',
+		default=5e-4,
+		help='learning rate of the PPO2 controller'
+	)
+	parser.add_argument(
+		'--ppo2-total-timesteps',
+		default=100000,
+		help='total timesteps of the PPO2 controller'
+	)
+	args = parser.parse_args()
+	
+	args.cuda = torch.cuda.is_available()
+	if args.num_devices == 'cpu':
+		args.num_devices = 1
+
+	assert args.dataset in {'mnist', 'cifar10'}
+	assert args.num_devices in {1, 2, 3, 4}
+
+	return args
 
 
 class Dataset(torch.utils.data.Dataset):
