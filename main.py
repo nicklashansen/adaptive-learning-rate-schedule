@@ -19,7 +19,7 @@ with warnings.catch_warnings():
 
 if __name__ == '__main__':
     args = utils.parse_args()
-    print(f'Running PPO2 controller for ALRS training...\nArgs:\n{args}\n')
+    print(f'Running PPO2 controller for ALRS training...\nArgs:\n{utils.args_to_str(args)}\n')
 
     data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
 
@@ -53,11 +53,16 @@ if __name__ == '__main__':
         verbose=1,
         policy_kwargs={
             'n_lstm': 64
-        }
+        },
+        tensorboard_log='data/tensorboard/ppo2_alrs'
     )
 
     while model.num_timesteps < args.ppo2_total_timesteps:
-        model.learn(total_timesteps=args.ppo2_total_timesteps//1000)
+        model.learn(
+            total_timesteps=args.ppo2_total_timesteps//100,
+            tb_log_name=utils.args_to_str(args, separate_lines=False),
+            reset_num_timesteps=False
+        )
         model.save('data/ppo2_alrs')
 
     def test(model, env):

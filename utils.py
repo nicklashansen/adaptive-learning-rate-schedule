@@ -67,7 +67,7 @@ def parse_args():
 	)
 	parser.add_argument(
 		'--ppo2-total-timesteps',
-		default=250000,
+		default=100000,
 		help='total timesteps of the PPO2 controller'
 	)
 	args = parser.parse_args()
@@ -80,6 +80,17 @@ def parse_args():
 	assert args.num_devices in {1, 2, 3, 4}
 
 	return args
+
+
+def args_to_str(args, separate_lines=True):
+	"""
+	Pretty-printing of command line arguments.
+	"""
+	string = str(args)[:-1].replace('Namespace(', '').replace(' ', '')
+	if separate_lines:
+		string = string.replace(',', '\n')
+	
+	return string
 
 
 class Dataset(torch.utils.data.Dataset):

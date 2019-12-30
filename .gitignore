@@ -140,3 +140,6 @@ data/mnist.npz
 
 # stable-baselines data files
 data/*.zip
+
+# Tensorboard
+data/tensorboard/*
