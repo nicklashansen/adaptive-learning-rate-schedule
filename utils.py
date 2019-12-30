@@ -67,7 +67,7 @@ def parse_args():
 	)
 	parser.add_argument(
 		'--ppo2-total-timesteps',
-		default=200000,
+		default=1000000,
 		help='total timesteps of the PPO2 controller'
 	)
 	args = parser.parse_args()

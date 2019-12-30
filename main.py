@@ -64,8 +64,7 @@ if __name__ == '__main__':
             #'net_arch': [64, {'pi': [32], 'vf': [32]}],
             'cnn_extractor': None
         },
-        tensorboard_log='data/tensorboard/ppo2_alrs',
-        seed=42
+        tensorboard_log='data/tensorboard/ppo2_alrs'
     )
 
     best_episode_reward = -np.inf
