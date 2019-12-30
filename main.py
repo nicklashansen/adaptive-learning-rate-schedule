@@ -14,6 +14,7 @@ with warnings.catch_warnings():
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
     from stable_baselines.common.policies import MlpPolicy, LstmPolicy, MlpLstmPolicy
     from stable_baselines.common import make_vec_env
+    from stable_baselines.common.vec_env import VecNormalize
     from stable_baselines import PPO2
 
 
@@ -42,6 +43,7 @@ if __name__ == '__main__':
             'num_devices': args.num_devices
         }
     )
+    env = VecNormalize(env, norm_obs=True, norm_reward=True, gamma=args.ppo2_gamma)
 
     model = PPO2(
         policy=MlpPolicy,
@@ -52,20 +54,35 @@ if __name__ == '__main__':
         nminibatches=1,
         verbose=1,
         policy_kwargs={
-            'act_fun': 'relu',
-            'net_arch': [64, {'pi': [32], 'vf': [32]}],
+            'act_fun': tf.nn.relu,
+            #'net_arch': [64, {'pi': [32], 'vf': [32]}],
             'cnn_extractor': None
         },
-        tensorboard_log='data/tensorboard/ppo2_alrs'
+        tensorboard_log='data/tensorboard/ppo2_alrs',
+        seed=42
     )
 
-    while model.num_timesteps < args.ppo2_total_timesteps:
-        model.learn(
-            total_timesteps=args.ppo2_total_timesteps//100,
-            tb_log_name=utils.args_to_str(args, separate_lines=False),
-            reset_num_timesteps=False
-        )
-        model.save('data/ppo2_alrs')
+    best_episode_reward = -np.inf
+
+    def callback(_locals, _globals):
+        """
+        Callback called every n steps.
+        """
+        global best_episode_reward, model
+
+        if model.episode_reward > best_episode_reward:
+            print(f'Achieved new maximum reward: {float(model.episode_reward)} (previous: {float(best_episode_reward)})')
+            best_episode_reward = float(model.episode_reward)
+            model.save('data/ppo2_alrs')
+
+        return True
+
+    model.learn(
+        total_timesteps=args.ppo2_total_timesteps,
+        tb_log_name=utils.args_to_str(args, separate_lines=False),
+        reset_num_timesteps=False,
+        callback=callback
+    )
 
     def test(model, env):
         model.set_env(env)

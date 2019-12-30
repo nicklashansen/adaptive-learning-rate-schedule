@@ -52,7 +52,7 @@ def parse_args():
 	)
 	parser.add_argument(
 		'--ppo2-gamma',
-		default=0.99,
+		default=1,
 		help='discount factor of the PPO2 controller'
 	)
 	parser.add_argument(
@@ -62,7 +62,7 @@ def parse_args():
 	)
 	parser.add_argument(
 		'--ppo2-lr',
-		default=5e-4,
+		default=1e-3,
 		help='learning rate of the PPO2 controller'
 	)
 	parser.add_argument(

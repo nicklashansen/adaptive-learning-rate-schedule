@@ -21,7 +21,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         2: Log variance of predictions
         3: Mean of output weight matrix
         4: Variance of output weight matrix
-        5: Log learning rate
+        5: Learning rate
 
     Actions (3):
         0: Doubles the LR
@@ -118,7 +118,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             np.log(yhat_var.avg),
             output_layer_weights.mean().data,
             output_layer_weights.var().data,
-            np.log(self.lr)
+            self.lr
         ], dtype=np.float32)
         reward = -np.log(val_loss.avg)
         done = self.training_steps > self.num_train_steps
