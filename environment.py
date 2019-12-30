@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+import setproctitle
 import gym
 from gym import spaces
 import matplotlib.pyplot as plt
@@ -138,6 +139,8 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         """
         if self.cuda:
             self.device = np.random.randint(0, self.num_devices)
+        device_proctitle = self.device if self.cuda else 'cpu'
+        setproctitle.setproctitle(f'AdaptiveLearningRate-v0 (device: {device_proctitle})')
         self.train_generator = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
         self.val_generator = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=True)
         self.num_train_batches = len(list(self.train_generator))

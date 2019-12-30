@@ -2,7 +2,8 @@ import gym
 import numpy as np
 import torch
 import os
-import warnings  
+import warnings
+import setproctitle
 
 from smallrl import algorithms, environments, networks, demos
 from environment import AdaptiveLearningRateOptimizer
@@ -20,12 +21,13 @@ with warnings.catch_warnings():
 
 if __name__ == '__main__':
     args = utils.parse_args()
+    setproctitle.setproctitle('PPO2-ALRS main process')
     print(f'Running PPO2 controller for ALRS training...\nArgs:\n{utils.args_to_str(args)}\n')
 
     data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
 
     if args.dataset == 'mnist':
-        net_fn = lambda: networks.MLP(784, 128, 64, 10)
+        net_fn = lambda: networks.MLP(784, 256, 128, 10)
     elif args.dataset == 'cifar10':
         net_fn = lambda: networks.CNN_MLP(channels=(3,16,8,4), kernel_sizes=(5,5,5), paddings=(0,0,0), sizes=(1600,10))
 
