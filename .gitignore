@@ -137,3 +137,6 @@ data/mnist.npz
 
 # vscode
 .vscode/
+
+# stable-baselines data files
+data/*.zip

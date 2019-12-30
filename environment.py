@@ -15,7 +15,15 @@ class AdaptiveLearningRateOptimizer(gym.Env):
     Optimization environment that implements the gym environment interface.
     Can be used to learn an adaptive learning rate schedule.
 
-    Actions:
+    Observations (6):
+        0: Log training loss
+        1: Log validation loss
+        2: Log variance of predictions
+        3: Mean of output weight matrix
+        4: Variance of output weight matrix
+        5: Log learning rate
+
+    Actions (3):
         0: Doubles the LR
         1: Halves the LR
         2: No-op
@@ -110,7 +118,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             np.log(yhat_var.avg),
             output_layer_weights.mean().data,
             output_layer_weights.var().data,
-            self.lr
+            np.log(self.lr)
         ], dtype=np.float32)
         reward = -np.log(val_loss.avg)
         done = self.training_steps > self.num_train_steps
@@ -156,7 +164,9 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         """
         assert mode == 'human'
         sns.set(style='whitegrid')
+        plt.ion()
         plt.figure(0, figsize=(16, 4))
+        plt.clf()
 
         timeline = np.linspace(start=0, stop=self.training_steps, num=len(self.info_list))
         train_losses = utils.values_from_list_of_dicts(self.info_list, key='train_loss')
@@ -165,11 +175,13 @@ class AdaptiveLearningRateOptimizer(gym.Env):
 
         plt.subplot(1, 3, 1)
         plt.plot(timeline, train_losses)
+        plt.yscale('log')
         plt.xlabel('Training steps')
         plt.ylabel('Log Training loss')
 
         plt.subplot(1, 3, 2)
         plt.plot(timeline, val_losses)
+        plt.yscale('log')
         plt.xlabel('Training steps')
         plt.ylabel('Log Validation loss')
 
@@ -180,3 +192,5 @@ class AdaptiveLearningRateOptimizer(gym.Env):
 
         plt.tight_layout()
         plt.show()
+        plt.draw()
+        plt.pause(0.001)

@@ -6,6 +6,9 @@ from torchvision import transforms
 
 
 def parse_args():
+	"""
+	Parses command line arguments provided by the user.
+	"""
 	parser = argparse.ArgumentParser(description='ALRS')
 	parser.add_argument(
 		'--dataset',
@@ -14,12 +17,12 @@ def parse_args():
 	)
 	parser.add_argument(
 		'--num-train',
-		default=10000,
+		default=20000,
 		help='number of training samples'
 	)
 	parser.add_argument(
 		'--num-val',
-		default=1000,
+		default=4000,
 		help='number of validation samples'
 	)
 	parser.add_argument(
@@ -64,7 +67,7 @@ def parse_args():
 	)
 	parser.add_argument(
 		'--ppo2-total-timesteps',
-		default=100000,
+		default=250000,
 		help='total timesteps of the PPO2 controller'
 	)
 	args = parser.parse_args()
@@ -80,6 +83,9 @@ def parse_args():
 
 
 class Dataset(torch.utils.data.Dataset):
+	"""
+	Implements the PyTorch dataset interface.
+	"""
 	def __init__(self, X, y):
 		self.X = X
 		self.y = y
