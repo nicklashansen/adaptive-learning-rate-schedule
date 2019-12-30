@@ -22,7 +22,7 @@ with warnings.catch_warnings():
 if __name__ == '__main__':
     args = utils.parse_args()
     setproctitle.setproctitle('PPO2-ALRS')
-    print(f'Running PPO2 controller for ALRS training...\nArgs:\n{utils.args_to_str(args)}\n')
+    print(f'Running PPO2 controller for ALRS testing...\nArgs:\n{utils.args_to_str(args)}\n')
 
     data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
 
@@ -51,41 +51,20 @@ if __name__ == '__main__':
     for i in  range(env.num_envs):
         env.venv.envs[i].set_random_state(env_seeds[i])
 
-    model = PPO2(
-        policy=MlpPolicy,
-        env=env,
-        gamma=args.ppo2_gamma,
-        n_steps=args.ppo2_update_freq,
-        learning_rate=args.ppo2_lr,
-        nminibatches=1,
-        verbose=0,
-        policy_kwargs={
-            'act_fun': tf.nn.relu,
-            #'net_arch': [64, {'pi': [32], 'vf': [32]}],
-            'cnn_extractor': None
-        },
-        tensorboard_log='data/tensorboard/ppo2_alrs'
-    )
+    def test(model, env):
+        model.set_env(env)
+        state = env.reset()
+        done = False
 
-    best_episode_reward = -np.inf
+        while not done:
+            action, _ = model.predict(state)
+            state, _, done, _ = env.step(action)
+            try:
+                env.render()
+            except:
+                print('Warning: device does not support rendering. Skipping...')
 
-    def callback(_locals, _globals):
-        """
-        Callback called every n steps.
-        """
-        global best_episode_reward, model
-
-        if model.episode_reward > best_episode_reward:
-            print(f'Achieved new maximum reward: {float(model.episode_reward)} (previous: {float(best_episode_reward)})')
-            best_episode_reward = float(model.episode_reward)
-            model.save('data/ppo2_alrs')
-
-        return True
-
-    model.learn(
-        total_timesteps=args.ppo2_total_timesteps,
-        tb_log_name=utils.args_to_str(args, separate_lines=False),
-        reset_num_timesteps=False,
-        callback=callback
-    )
-    print('Training terminated successfully!')
+    model = PPO2.load('data/ppo2_alrs')
+    test(model, env)
+    print('Testing terminated successfully!')
+    

@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 import utils
+from smallrl.utils import smooth
 
 
 class AdaptiveLearningRateOptimizer(gym.Env):
@@ -167,7 +168,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         return state
 
     
-    def render(self, mode='human'):
+    def render(self, mode='human', smooth_kernel_size=5):
         """
         Renders current state as a figure.
         """
@@ -182,22 +183,23 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         val_losses = utils.values_from_list_of_dicts(self.info_list, key='val_loss')
         learning_rates = utils.values_from_list_of_dicts(self.info_list, key='lr')
 
+        if smooth_kernel_size is not None and len(self.info_list) >= smooth_kernel_size:
+            learning_rates = smooth(learning_rates, kernel_size=smooth_kernel_size)
+
         plt.subplot(1, 3, 1)
         plt.plot(timeline, train_losses)
-        plt.yscale('log')
         plt.xlabel('Training steps')
         plt.ylabel('Log Training loss')
 
         plt.subplot(1, 3, 2)
         plt.plot(timeline, val_losses)
-        plt.yscale('log')
         plt.xlabel('Training steps')
         plt.ylabel('Log Validation loss')
 
         plt.subplot(1, 3, 3)
         plt.plot(timeline, learning_rates)
         plt.xlabel('Training steps')
-        plt.ylabel('Log Learning rate')
+        plt.ylabel('Learning rate')
 
         plt.tight_layout()
         plt.show()
