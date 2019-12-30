@@ -21,7 +21,7 @@ with warnings.catch_warnings():
 
 if __name__ == '__main__':
     args = utils.parse_args()
-    setproctitle.setproctitle('PPO2-ALRS main process')
+    setproctitle.setproctitle('PPO2-ALRS')
     print(f'Running PPO2 controller for ALRS training...\nArgs:\n{utils.args_to_str(args)}\n')
 
     data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
@@ -46,6 +46,10 @@ if __name__ == '__main__':
         }
     )
     env = VecNormalize(env, norm_obs=True, norm_reward=True, gamma=args.ppo2_gamma)
+    
+    env_seeds = [0, 1, 2, 3]
+    for i in  range(env.num_envs):
+        env.venv.envs[i].set_random_state(env_seeds[i])
 
     model = PPO2(
         policy=MlpPolicy,

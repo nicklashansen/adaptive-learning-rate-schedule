@@ -54,9 +54,16 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.num_devices = num_devices
         self.verbose = verbose
         self.info_list = []
-
+        self.set_random_state(0)
         self.cuda = torch.cuda.is_available()
         assert num_devices == 1 or self.cuda
+
+    
+    def set_random_state(self, seed):
+        """
+        Sets the internal random state of the environment.
+        """
+        self.random_state = np.random.RandomState(seed)
 
     
     def _update_lr(self, action, clip=True):
@@ -138,9 +145,8 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         Resets the environment and returns the initial state.
         """
         if self.cuda:
-            self.device = np.random.randint(0, self.num_devices)
-        device_proctitle = self.device if self.cuda else 'cpu'
-        setproctitle.setproctitle(f'AdaptiveLearningRate-v0 (device: {device_proctitle})')
+            self.device = self.random_state.randint(0, self.num_devices)
+        setproctitle.setproctitle(f'AdaptiveLearningRate-v0')
         self.train_generator = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
         self.val_generator = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=True)
         self.num_train_batches = len(list(self.train_generator))
