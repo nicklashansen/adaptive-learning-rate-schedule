@@ -3,6 +3,10 @@ import numpy as np
 import torch
 import torchvision
 from torchvision import transforms
+import pickle as pkl
+import os
+import string
+import random
 
 
 def parse_args():
@@ -54,9 +58,9 @@ def parse_args():
 	)
 	parser.add_argument(
 		'--num-devices',
-		type=str,
-		default='cpu',
-		help='number of devices used for training of trainee networks: cpu | 1 | 2 | 3 | 4'
+		type=int,
+		default=1,
+		help='number of devices used for training of trainee networks: 1 | 2 | 3 | 4'
 	)
 	parser.add_argument(
 		'--ppo2-gamma',
@@ -83,11 +87,7 @@ def parse_args():
 		help='total timesteps of the PPO2 controller'
 	)
 	args = parser.parse_args()
-	
 	args.cuda = torch.cuda.is_available()
-	if args.num_devices == 'cpu':
-		args.num_devices = 1
-
 	assert args.dataset in {'mnist', 'cifar10'}
 	assert args.num_devices in {1, 2, 3, 4}
 
@@ -105,6 +105,13 @@ def args_to_str(args, separate_lines=True):
 	return string
 
 
+def get_random_string(length=6):
+	"""
+	Generates a random case-invariant string of specified length.
+	"""
+	return ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
+
+
 class Dataset(torch.utils.data.Dataset):
 	"""
 	Implements the PyTorch dataset interface.
@@ -120,7 +127,7 @@ class Dataset(torch.utils.data.Dataset):
 		return self.X[idx], self.y[idx]
 
 
-def load_cifar(num_train=50000, num_val=2048):
+def load_cifar(num_train=50000, num_val=10000):
 	"""
 	Loads a subset of the CIFAR dataset and returns it as a tuple.
 	"""
@@ -135,7 +142,7 @@ def load_cifar(num_train=50000, num_val=2048):
 	return train_dataset, val_dataset
 
 
-def load_mnist(filename='data/mnist.npz', num_train=4096, num_val=512):
+def load_mnist(filename='data/mnist.npz', num_train=50000, num_val=10000):
 	"""
 	Loads a subset of the grayscale MNIST dataset and returns it as a tuple.
 	"""
@@ -151,6 +158,28 @@ def load_mnist(filename='data/mnist.npz', num_train=4096, num_val=512):
 	val_dataset = Dataset(x_valid, y_valid)
 
 	return train_dataset, val_dataset
+
+
+def save_baseline(info_list, name):
+	"""
+	Saves a baseline file locally for future use.
+	"""
+	path = 'data/baselines/'
+	if not os.path.exists(path): os.makedirs(path)
+	with open(path+name+'.pkl', 'wb') as f:
+		pkl.dump(info_list, f, protocol=pkl.HIGHEST_PROTOCOL)
+
+
+def load_baseline(name):
+	"""
+	Loads a stored baseline file for rendering.
+	"""
+	path = 'data/baselines/'
+	try:
+		with open(path+name+'.pkl', 'rb') as f:
+			return pkl.load(f)
+	except:
+		return None
 
 
 class AvgLoss():

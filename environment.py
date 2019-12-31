@@ -55,12 +55,12 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.num_devices = num_devices
         self.verbose = verbose
         self.info_list = []
-        self.set_random_state(0)
+        self.seed(0)
         self.cuda = torch.cuda.is_available()
         assert num_devices == 1 or self.cuda
 
     
-    def set_random_state(self, seed):
+    def seed(self, seed):
         """
         Sets the internal random state of the environment.
         """
@@ -69,7 +69,8 @@ class AdaptiveLearningRateOptimizer(gym.Env):
     
     def _update_lr(self, action, clip=True):
         """
-        Updates the current learning rate according to a given action. 
+        Updates the current learning rate according to a given action.
+        Optionally clips to [1e-6, 1] range.
         """
         if action == 0:
             self.lr *= 2
@@ -129,9 +130,13 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             output_layer_weights.var().data,
             self.lr
         ], dtype=np.float32)
-        reward = -np.log(val_loss.avg)
+        reward = -val_loss.avg
         done = self.training_steps > self.num_train_steps
-        info = {'train_loss': train_loss.avg, 'val_loss': val_loss.avg, 'lr': self.lr}
+        info = {
+            'train_loss': train_loss.avg,
+            'val_loss': val_loss.avg,
+            'lr': self.lr
+        }
 
         self.info_list.append(info)
 
@@ -147,7 +152,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         """
         if self.cuda:
             self.device = self.random_state.randint(0, self.num_devices)
-        setproctitle.setproctitle(f'AdaptiveLearningRate-v0')
+        setproctitle.setproctitle('PPO2-ALRS-v0')
         self.train_generator = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
         self.val_generator = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=True)
         self.num_train_batches = len(list(self.train_generator))
@@ -168,40 +173,73 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         return state
 
     
-    def render(self, mode='human', smooth_kernel_size=5):
+    def _info_list_to_plot_metrics(self, info_list, label, smooth_kernel_size=7):
+        """
+        Converts an info list to a tuple of lists ready for rendering.
+        """
+        assert len(self.info_list) <= len(info_list)
+        if len(self.info_list) < len(info_list):
+            info_list = info_list[:len(self.info_list)]
+        timeline = np.linspace(start=0, stop=self.training_steps, num=len(info_list))
+        train_losses = utils.values_from_list_of_dicts(info_list, key='train_loss')
+        val_losses = utils.values_from_list_of_dicts(info_list, key='val_loss')
+        learning_rates = utils.values_from_list_of_dicts(info_list, key='lr')
+
+        if smooth_kernel_size is not None and len(info_list) >= smooth_kernel_size:
+            smoothed_learning_rates = smooth(learning_rates, kernel_size=smooth_kernel_size)
+        else:
+            smoothed_learning_rates = None
+
+        return timeline, train_losses, val_losses, learning_rates, smoothed_learning_rates, label
+
+    
+    def render(self, mode='human', smooth_kernel_size=7):
         """
         Renders current state as a figure.
         """
         assert mode == 'human'
         sns.set(style='whitegrid')
+        colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple']
         plt.ion()
         plt.figure(0, figsize=(16, 4))
         plt.clf()
 
-        timeline = np.linspace(start=0, stop=self.training_steps, num=len(self.info_list))
-        train_losses = utils.values_from_list_of_dicts(self.info_list, key='train_loss')
-        val_losses = utils.values_from_list_of_dicts(self.info_list, key='val_loss')
-        learning_rates = utils.values_from_list_of_dicts(self.info_list, key='lr')
-
-        if smooth_kernel_size is not None and len(self.info_list) >= smooth_kernel_size:
-            learning_rates = smooth(learning_rates, kernel_size=smooth_kernel_size)
+        experiments = [
+            self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule'),
+            self._info_list_to_plot_metrics(utils.load_baseline('initial_lr'), label='Constant (initial LR)'),
+        ]
 
         plt.subplot(1, 3, 1)
-        plt.plot(timeline, train_losses)
+        for i, (timeline, train_losses, val_losses, learning_rates, smoothed_learning_rates, label) in enumerate(experiments):
+            plt.plot(timeline, train_losses, color=colors[i], label=label)
         plt.xlabel('Training steps')
-        plt.ylabel('Log Training loss')
+        plt.ylabel('Log training loss')
+        plt.legend(loc='upper right')
 
         plt.subplot(1, 3, 2)
-        plt.plot(timeline, val_losses)
+        for i, (timeline, train_losses, val_losses, learning_rates, smoothed_learning_rates, label) in enumerate(experiments):
+            plt.plot(timeline, val_losses, color=colors[i], label=label)
         plt.xlabel('Training steps')
-        plt.ylabel('Log Validation loss')
+        plt.ylabel('Log validation loss')
+        plt.legend(loc='upper right')
 
         plt.subplot(1, 3, 3)
-        plt.plot(timeline, learning_rates)
+        for i, (timeline, train_losses, val_losses, learning_rates, smoothed_learning_rates, label) in enumerate(experiments):
+            if smoothed_learning_rates is not None:
+                smoothed_learning_rates = smooth(learning_rates, kernel_size=smooth_kernel_size)
+                plt.plot(timeline, learning_rates, color=colors[i], alpha=0.25)
+                plt.plot(timeline, smoothed_learning_rates, color=colors[i], label=label)
+            else:
+                plt.plot(timeline, learning_rates, color=colors[i], label=label)
         plt.xlabel('Training steps')
         plt.ylabel('Learning rate')
+        plt.legend(loc='upper right')
+
+        last_step = len(self.info_list) == (self.num_train_steps//self.update_freq)+1
 
         plt.tight_layout()
+        if last_step:
+            plt.savefig('results/experiment.png')
         plt.show()
         plt.draw()
-        plt.pause(0.001)
+        plt.pause(5 if last_step else 0.001)

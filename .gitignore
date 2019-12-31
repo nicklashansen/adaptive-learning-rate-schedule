@@ -144,3 +144,6 @@ data/*.zip
 # Tensorboard
 data/tensorboard/*
 data/tensorboard-remote/*
+
+# Baseline files
+data/baselines/*

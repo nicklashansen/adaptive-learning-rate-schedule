@@ -8,6 +8,7 @@ import setproctitle
 from smallrl import algorithms, environments, networks, demos
 from environment import AdaptiveLearningRateOptimizer
 import utils
+from lenet import LeNet5
 
 with warnings.catch_warnings():  
     warnings.filterwarnings("ignore", category=FutureWarning)
@@ -21,15 +22,17 @@ with warnings.catch_warnings():
 
 if __name__ == '__main__':
     args = utils.parse_args()
-    setproctitle.setproctitle('PPO2-ALRS')
+    experiment_id = utils.get_random_string()
+    setproctitle.setproctitle('PPO2-ALRS-'+experiment_id.upper())
     print(f'Running PPO2 controller for ALRS training...\nArgs:\n{utils.args_to_str(args)}\n')
 
-    data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
-
     if args.dataset == 'mnist':
+        data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
         net_fn = lambda: networks.MLP(784, 256, 128, 10)
     elif args.dataset == 'cifar10':
-        net_fn = lambda: networks.CNN_MLP(channels=(3,16,8,4), kernel_sizes=(5,5,5), paddings=(0,0,0), sizes=(1600,10))
+        data = utils.load_cifar(num_train=args.num_train, num_val=args.num_val)
+        #net_fn = lambda: networks.CNN_MLP(channels=(3,16,8,4), kernel_sizes=(5,5,5), paddings=(0,0,0), sizes=(1600,10))
+        net_fn = lambda: LeNet5(num_classes=10)
 
     env = make_vec_env(
         env_id=AdaptiveLearningRateOptimizer,
@@ -42,14 +45,11 @@ if __name__ == '__main__':
             'update_freq': args.update_freq,
             'num_train_steps': args.num_train_steps,
             'initial_lr': args.initial_lr,
-            'num_devices': args.num_devices
+            'num_devices': args.num_devices,
+            'verbose': False
         }
     )
-    env = VecNormalize(env, norm_obs=True, norm_reward=False, gamma=args.ppo2_gamma)
-    
-    env_seeds = [0, 1, 2, 3]
-    for i in  range(env.num_envs):
-        env.venv.envs[i].set_random_state(env_seeds[i])
+    env = VecNormalize(env, norm_obs=True, norm_reward=True, gamma=args.ppo2_gamma)
 
     model = PPO2(
         policy=MlpPolicy,
@@ -58,11 +58,10 @@ if __name__ == '__main__':
         n_steps=args.ppo2_update_freq,
         learning_rate=args.ppo2_lr,
         nminibatches=1,
-        verbose=0,
+        verbose=1,
         policy_kwargs={
             'act_fun': tf.nn.relu,
-            #'net_arch': [64, {'pi': [32], 'vf': [32]}],
-            'cnn_extractor': None
+            'net_arch': [{'pi': [32, 32], 'vf': [32, 32]}]
         },
         tensorboard_log='data/tensorboard/ppo2_alrs'
     )
@@ -73,18 +72,18 @@ if __name__ == '__main__':
         """
         Callback called every n steps.
         """
-        global best_episode_reward, model
+        global experiment_id, best_episode_reward, model
 
         if model.episode_reward > best_episode_reward:
             print(f'Achieved new maximum reward: {float(model.episode_reward)} (previous: {float(best_episode_reward)})')
             best_episode_reward = float(model.episode_reward)
-            model.save('data/ppo2_alrs')
+            model.save('data/'+experiment_id)
 
         return True
 
     model.learn(
         total_timesteps=args.ppo2_total_timesteps,
-        tb_log_name=utils.args_to_str(args, separate_lines=False),
+        tb_log_name=experiment_id+'__'+utils.args_to_str(args, separate_lines=False),
         reset_num_timesteps=False,
         callback=callback
     )
