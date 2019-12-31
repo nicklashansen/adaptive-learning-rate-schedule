@@ -29,9 +29,9 @@ if __name__ == '__main__':
     if args.dataset == 'mnist':
         data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
         net_fn = lambda: networks.MLP(784, 256, 128, 10)
+
     elif args.dataset == 'cifar10':
         data = utils.load_cifar(num_train=args.num_train, num_val=args.num_val)
-        #net_fn = lambda: networks.CNN_MLP(channels=(3,16,8,4), kernel_sizes=(5,5,5), paddings=(0,0,0), sizes=(1600,10))
         net_fn = lambda: LeNet5(num_classes=10)
 
     env = make_vec_env(
@@ -49,7 +49,7 @@ if __name__ == '__main__':
             'verbose': False
         }
     )
-    env = VecNormalize(env, norm_obs=True, norm_reward=True, gamma=args.ppo2_gamma)
+    env = VecNormalize(env, norm_obs=args.ppo2_norm_obs, norm_reward=args.ppo2_norm_reward, gamma=args.ppo2_gamma)
 
     model = PPO2(
         policy=MlpPolicy,

@@ -86,6 +86,18 @@ def parse_args():
 		default=1000000,
 		help='total timesteps of the PPO2 controller'
 	)
+	parser.add_argument(
+		'--ppo2-norm-obs',
+		type=bool,
+		default=True,
+		help='normalize observations using an EMA'
+	)
+	parser.add_argument(
+		'--ppo2-norm-reward',
+		type=bool,
+		default=True,
+		help='normalize rewards using an EMA'
+	)
 	args = parser.parse_args()
 	args.cuda = torch.cuda.is_available()
 	assert args.dataset in {'mnist', 'cifar10'}
