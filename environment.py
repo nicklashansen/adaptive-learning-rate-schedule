@@ -7,6 +7,7 @@ import gym
 from gym import spaces
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 import utils
 from smallrl.utils import smooth
@@ -235,11 +236,15 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         plt.ylabel('Learning rate')
         plt.legend(loc='upper right')
 
-        last_step = len(self.info_list) == (self.num_train_steps//self.update_freq)+1
+        last_step = len(self.info_list) == (self.num_train_steps//self.update_freq)
 
         plt.tight_layout()
+        
         if last_step:
-            plt.savefig('results/experiment.png')
+            path = 'results/'
+            if not os.path.exists(path): os.makedirs(path)
+            plt.savefig(path + 'experiment.png')
+
         plt.show()
         plt.draw()
         plt.pause(5 if last_step else 0.001)

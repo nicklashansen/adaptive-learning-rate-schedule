@@ -108,7 +108,7 @@ def parse_args():
 	parser.add_argument(
 		'--test-id',
 		type=str,
-		default='odjxjo_200000',
+		default='ywxilp',
 		help='experiment id to load and evaluate (when running test.py)'
 	)
 	args = parser.parse_args()
