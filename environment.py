@@ -174,7 +174,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         return state
 
     
-    def _info_list_to_plot_metrics(self, info_list, label, smooth_kernel_size=7):
+    def _info_list_to_plot_metrics(self, info_list, label, smooth_kernel_size=None):
         """
         Converts an info list to a tuple of lists ready for rendering.
         """
@@ -187,14 +187,18 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         learning_rates = utils.values_from_list_of_dicts(info_list, key='lr')
 
         if smooth_kernel_size is not None and len(info_list) >= smooth_kernel_size:
+            smoothed_train_losses = smooth(train_losses, kernel_size=smooth_kernel_size)
+            smoothed_val_losses = smooth(val_losses, kernel_size=smooth_kernel_size)
             smoothed_learning_rates = smooth(learning_rates, kernel_size=smooth_kernel_size)
         else:
+            smoothed_train_losses = None
+            smoothed_val_losses = None
             smoothed_learning_rates = None
 
-        return timeline, train_losses, val_losses, learning_rates, smoothed_learning_rates, label
+        return timeline, train_losses, val_losses, learning_rates, smoothed_train_losses, smoothed_val_losses, smoothed_learning_rates, label
 
     
-    def render(self, mode='human', smooth_kernel_size=7):
+    def render(self, mode='human', smooth_kernel_size=9):
         """
         Renders current state as a figure.
         """
@@ -206,28 +210,35 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         plt.clf()
 
         experiments = [
-            self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule'),
-            self._info_list_to_plot_metrics(utils.load_baseline('initial_lr'), label='Constant (initial LR)'),
+            self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule', smooth_kernel_size=smooth_kernel_size),
+            self._info_list_to_plot_metrics(utils.load_baseline('initial_lr'), label='Constant (initial LR)', smooth_kernel_size=smooth_kernel_size),
         ]
 
         plt.subplot(1, 3, 1)
-        for i, (timeline, train_losses, val_losses, learning_rates, smoothed_learning_rates, label) in enumerate(experiments):
-            plt.plot(timeline, train_losses, color=colors[i], label=label)
+        for i, (timeline, train_losses, val_losses, learning_rates, smoothed_train_losses, smoothed_val_losses, smoothed_learning_rates, label) in enumerate(experiments):
+            if smoothed_train_losses is not None:
+                plt.plot(timeline, np.log(train_losses), color=colors[i], alpha=0.25)
+                plt.plot(timeline, np.log(smoothed_train_losses), color=colors[i], label=label)
+            else:
+                plt.plot(timeline, np.log(train_losses), color=colors[i], label=label)
         plt.xlabel('Training steps')
         plt.ylabel('Log training loss')
         plt.legend(loc='upper right')
 
         plt.subplot(1, 3, 2)
-        for i, (timeline, train_losses, val_losses, learning_rates, smoothed_learning_rates, label) in enumerate(experiments):
-            plt.plot(timeline, val_losses, color=colors[i], label=label)
+        for i, (timeline, train_losses, val_losses, learning_rates, smoothed_train_losses, smoothed_val_losses, smoothed_learning_rates, label) in enumerate(experiments):
+            if smoothed_train_losses is not None:
+                plt.plot(timeline, np.log(val_losses), color=colors[i], alpha=0.25)
+                plt.plot(timeline, np.log(smoothed_val_losses), color=colors[i], label=label)
+            else:
+                plt.plot(timeline, np.log(val_losses), color=colors[i], label=label)
         plt.xlabel('Training steps')
         plt.ylabel('Log validation loss')
         plt.legend(loc='upper right')
 
         plt.subplot(1, 3, 3)
-        for i, (timeline, train_losses, val_losses, learning_rates, smoothed_learning_rates, label) in enumerate(experiments):
-            if smoothed_learning_rates is not None:
-                smoothed_learning_rates = smooth(learning_rates, kernel_size=smooth_kernel_size)
+        for i, (timeline, train_losses, val_losses, learning_rates, smoothed_train_losses, smoothed_val_losses, smoothed_learning_rates, label) in enumerate(experiments):
+            if smoothed_train_losses is not None:
                 plt.plot(timeline, learning_rates, color=colors[i], alpha=0.25)
                 plt.plot(timeline, smoothed_learning_rates, color=colors[i], label=label)
             else:
