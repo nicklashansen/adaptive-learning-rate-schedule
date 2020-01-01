@@ -25,6 +25,7 @@ if __name__ == '__main__':
     experiment_id = utils.get_random_string()
     setproctitle.setproctitle('PPO2-ALRS-'+experiment_id.upper())
     print(f'Running PPO2 controller for ALRS training...\nArgs:\n{utils.args_to_str(args)}\n')
+    print(f'Experiment ID:', experiment_id)
 
     if args.dataset == 'mnist':
         data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
@@ -56,6 +57,7 @@ if __name__ == '__main__':
         env=env,
         gamma=args.ppo2_gamma,
         n_steps=args.ppo2_update_freq,
+        ent_coef=args.ppo2_ent_coef,
         learning_rate=args.ppo2_lr,
         nminibatches=1,
         verbose=1,

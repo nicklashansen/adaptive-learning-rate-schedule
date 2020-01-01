@@ -76,6 +76,12 @@ def parse_args():
 		help='frequency of updates of the PPO2 controller'
 	)
 	parser.add_argument(
+		'--ppo2-ent-coef',
+		type=float,
+		default=0.01,
+		help='entropy coefficient of the PPO2 controller'
+	)
+	parser.add_argument(
 		'--ppo2-lr',
 		type=float,
 		default=3e-4,
@@ -89,15 +95,15 @@ def parse_args():
 	)
 	parser.add_argument(
 		'--ppo2-norm-obs',
-		type=bool,
-		default=True,
-		help='normalize observations using an EMA'
+		type=int,
+		default=1,
+		help='normalize observations using an EMA: 0 | 1'
 	)
 	parser.add_argument(
 		'--ppo2-norm-reward',
-		type=bool,
-		default=True,
-		help='normalize rewards using an EMA'
+		type=int,
+		default=0,
+		help='normalize rewards using an EMA: 0 | 1'
 	)
 	parser.add_argument(
 		'--test-id',
@@ -106,6 +112,10 @@ def parse_args():
 		help='experiment id to load and evaluate (when running test.py)'
 	)
 	args = parser.parse_args()
+	assert args.ppo2_norm_obs in {0, 1}
+	assert args.ppo2_norm_reward in {0, 1}
+	args.ppo2_norm_obs = bool(args.ppo2_norm_obs)
+	args.ppo2_norm_reward = bool(args.ppo2_norm_reward)
 	args.cuda = torch.cuda.is_available()
 	assert args.dataset in {'mnist', 'cifar10'}
 	assert args.num_devices in {1, 2, 3, 4}
