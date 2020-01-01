@@ -66,24 +66,30 @@ if __name__ == '__main__':
         tensorboard_log='data/tensorboard/ppo2_alrs'
     )
 
+    utils.args_to_file(args, experiment_id)
+
     best_episode_reward = -np.inf
 
     def callback(_locals, _globals):
         """
         Callback called every n steps.
         """
-        global experiment_id, best_episode_reward, model
+        global experiment_id, best_episode_reward, model, args
 
         if model.episode_reward > best_episode_reward:
             print(f'Achieved new maximum reward: {float(model.episode_reward)} (previous: {float(best_episode_reward)})')
             best_episode_reward = float(model.episode_reward)
             model.save('data/'+experiment_id)
+        
+        save_interval = 50000 if args.dataset == 'mnist' else 10000
+        if model.num_timesteps % save_interval == 0 and model.num_timesteps > 0:
+            model.save('data/'+experiment_id+'_'+str(model.num_timesteps))
 
         return True
 
     model.learn(
         total_timesteps=args.ppo2_total_timesteps,
-        tb_log_name=experiment_id+'__'+utils.args_to_str(args, separate_lines=False),
+        tb_log_name=experiment_id,
         reset_num_timesteps=False,
         callback=callback
     )

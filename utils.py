@@ -7,6 +7,7 @@ import pickle as pkl
 import os
 import string
 import random
+import json
 
 
 def parse_args():
@@ -17,7 +18,7 @@ def parse_args():
 	parser.add_argument(
 		'--dataset',
 		type=str,
-		default='mnist',
+		default='cifar10',
 		help='dataset to use: mnist | cifar10'
 	)
 	parser.add_argument(
@@ -115,6 +116,14 @@ def args_to_str(args, separate_lines=True):
 		string = string.replace(',', '\n')
 	
 	return string
+
+
+def args_to_file(args, name):
+	"""
+	Saves command line arguments to a file with the specified name.
+	"""
+	with open('data/' + name + '.json', 'w', encoding='utf-8') as f:
+		json.dump(args, f, default=lambda x: x.__dict__, ensure_ascii=False, indent=4)
 
 
 def get_random_string(length=6):
