@@ -138,8 +138,9 @@ data/mnist.npz
 # vscode
 .vscode/
 
-# stable-baselines data files
+# Experiment data files
 data/*.zip
+data/*.json
 
 # Tensorboard
 data/tensorboard/*

@@ -61,13 +61,12 @@ if __name__ == '__main__':
         verbose=1,
         policy_kwargs={
             'act_fun': tf.nn.relu,
-            'net_arch': [{'pi': [32, 32], 'vf': [32, 32]}]
+            'net_arch': [{'pi': [64, 32], 'vf': [64, 32]}]
         },
         tensorboard_log='data/tensorboard/ppo2_alrs'
     )
 
     utils.args_to_file(args, experiment_id)
-
     best_episode_reward = -np.inf
 
     def callback(_locals, _globals):

@@ -24,6 +24,17 @@ if __name__ == '__main__':
     args = utils.parse_args()
     setproctitle.setproctitle('PPO2-ALRS')
     print(f'Running PPO2 controller for ALRS testing...\nArgs:\n{utils.args_to_str(args)}\n')
+    print(f'Experiment ID:', args.test_id)
+
+    try:
+        exp_id = args.test_id.split('_')[0] if '_' in args.test_id else args.test_id
+        experiment_args = utils.load_args_file_as_dict(exp_id)
+    except:
+        raise ValueError(f'Experiment with id {args.test_id} could not be found!')
+
+    experiment_dataset = experiment_args['dataset']
+    if args.dataset != experiment_dataset:
+        raise Warning(f'Agent is tested on {args.data} but was trained on {experiment_dataset}.')
 
     if args.dataset == 'mnist':
         data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
@@ -64,7 +75,7 @@ if __name__ == '__main__':
             except:
                 print('Warning: device does not support rendering. Skipping...')
 
-    model = PPO2.load('data/iezzgq')
+    model = PPO2.load('data/'+args.test_id)
     test(model, env)
     print('Testing terminated successfully!')
     

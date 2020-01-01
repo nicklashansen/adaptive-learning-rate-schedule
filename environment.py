@@ -123,9 +123,9 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         assert output_layer_weights.size(0) == 10
 
         state = np.array([
-            np.log(train_loss.avg),
-            np.log(val_loss.avg),
-            np.log(yhat_var.avg),
+            train_loss.avg,
+            val_loss.avg,
+            yhat_var.avg,
             output_layer_weights.mean().data,
             output_layer_weights.var().data,
             self.lr

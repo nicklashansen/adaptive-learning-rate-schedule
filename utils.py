@@ -18,7 +18,7 @@ def parse_args():
 	parser.add_argument(
 		'--dataset',
 		type=str,
-		default='cifar10',
+		default='mnist',
 		help='dataset to use: mnist | cifar10'
 	)
 	parser.add_argument(
@@ -99,6 +99,12 @@ def parse_args():
 		default=True,
 		help='normalize rewards using an EMA'
 	)
+	parser.add_argument(
+		'--test-id',
+		type=str,
+		default='odjxjo_200000',
+		help='experiment id to load and evaluate (when running test.py)'
+	)
 	args = parser.parse_args()
 	args.cuda = torch.cuda.is_available()
 	assert args.dataset in {'mnist', 'cifar10'}
@@ -120,10 +126,18 @@ def args_to_str(args, separate_lines=True):
 
 def args_to_file(args, name):
 	"""
-	Saves command line arguments to a file with the specified name.
+	Saves command line arguments to a JSON file with the specified name.
 	"""
 	with open('data/' + name + '.json', 'w', encoding='utf-8') as f:
 		json.dump(args, f, default=lambda x: x.__dict__, ensure_ascii=False, indent=4)
+
+
+def load_args_file_as_dict(name):
+	"""
+	Loads command line arguments stored as a JSON file with the specified name.
+	"""
+	with open('data/' + name + '.json', 'r') as f:
+		return json.load(f)
 
 
 def get_random_string(length=6):
