@@ -4,6 +4,7 @@ import torch
 import os
 import warnings
 import setproctitle
+import pickle as pkl
 
 from smallrl import algorithms, environments, networks, demos
 from environment import AdaptiveLearningRateOptimizer
@@ -23,18 +24,25 @@ with warnings.catch_warnings():
 if __name__ == '__main__':
     args = utils.parse_args()
     setproctitle.setproctitle('PPO2-ALRS')
-    print(f'Running PPO2 controller for ALRS testing...\nArgs:\n{utils.args_to_str(args)}\n')
-    print(f'Experiment ID:', args.test_id)
 
-    try:
-        exp_id = args.test_id.split('_')[0] if '_' in args.test_id else args.test_id
-        experiment_args = utils.load_args_file_as_dict(exp_id)
-    except:
-        raise ValueError(f'Experiment with id {args.test_id} could not be found!')
+    test_id = args.test_id if args.test_schedule == 'none' else None
+    test_schedule = args.test_schedule if args.test_schedule != 'none' else None
 
-    experiment_dataset = experiment_args['dataset']
-    if args.dataset != experiment_dataset:
-        raise Warning(f'Agent is tested on {args.data} but was trained on {experiment_dataset}.')
+    if test_id is not None:
+        try:
+            exp_id = args.test_id.split('_')[0] if '_' in args.test_id else args.test_id
+            experiment_args = utils.load_args_file_as_dict(exp_id)
+            print(f'Running PPO2 controller for ALRS testing...\Trained with args:\n{utils.args_to_str(experiment_args)}\n')
+            print(f'Experiment ID:', args.test_id)
+        except:
+            raise ValueError(f'Experiment with id {args.test_id} could not be found!')
+
+        experiment_dataset = experiment_args['dataset']
+        if args.dataset != experiment_dataset:
+            raise Warning(f'Agent is tested on {args.data} but was trained on {experiment_dataset}.')
+    
+    else:
+        print(f'Running saved schedule for ALRS testing...\nArgs:\n{utils.args_to_str(args)}\n')
 
     if args.dataset == 'mnist':
         data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
@@ -61,21 +69,54 @@ if __name__ == '__main__':
     )
     env = VecNormalize(env, norm_obs=args.ppo2_norm_obs, norm_reward=args.ppo2_norm_reward, gamma=args.ppo2_gamma)
 
+    best_overall_val_loss = np.inf
 
-    def test(model, env):
-        model.set_env(env)
+    def run_test(env):
+        global best_overall_val_loss
+
+        if test_id is not None:
+            model = PPO2.load('data/'+test_id)
+            model.set_env(env)
+            actions = []
+        else:
+            with open('results/'+test_schedule+'.pkl', 'rb') as f:
+                actions = pkl.load(f)
+
         state = env.reset()
         done = False
+        best_val_loss = np.inf
 
         while not done:
-            action, _ = model.predict(state)
-            state, _, done, _ = env.step(action)
+            if test_id is not None:
+                action, _ = model.predict(state)
+                state, _, done, _ = env.step(action)
+                actions.append(action)
+            else:
+                action = actions.pop(0) if len(actions) > 0 else 2
+                env.step(action)
+            
+            best_val_loss = min(env.venv.envs[0].info_list[-1]['val_loss'], best_val_loss)
+
             try:
                 env.render()
             except:
                 print('Warning: device does not support rendering. Skipping...')
 
-    model = PPO2.load('data/'+args.test_id)
-    test(model, env)
+        best_overall_val_loss = min(best_val_loss, best_overall_val_loss)
+
+        if test_id is not None and best_overall_val_loss == best_val_loss:
+            with open('results/experiment.pkl', 'wb') as f:
+                pkl.dump(actions, f, protocol=pkl.HIGHEST_PROTOCOL)
+
+        print(f'Achieved a validation loss of {best_val_loss} (best: {best_overall_val_loss})')
+
+        return best_val_loss
+
+    if test_id is not None:
+        while True:
+            run_test(env)
+    else:
+        run_test(env)
+
     print('Testing terminated successfully!')
     

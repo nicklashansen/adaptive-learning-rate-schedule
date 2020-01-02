@@ -198,7 +198,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         return timeline, train_losses, val_losses, learning_rates, smoothed_train_losses, smoothed_val_losses, smoothed_learning_rates, label
 
     
-    def render(self, mode='human', smooth_kernel_size=9):
+    def render(self, mode='human', smooth_kernel_size=5):
         """
         Renders current state as a figure.
         """
@@ -212,6 +212,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         experiments = [
             self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule', smooth_kernel_size=smooth_kernel_size),
             self._info_list_to_plot_metrics(utils.load_baseline('initial_lr'), label='Constant (initial LR)', smooth_kernel_size=smooth_kernel_size),
+            self._info_list_to_plot_metrics(utils.load_baseline('step_decay'), label='Step decay + warmup', smooth_kernel_size=smooth_kernel_size)
         ]
 
         plt.subplot(1, 3, 1)
@@ -227,7 +228,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
 
         plt.subplot(1, 3, 2)
         for i, (timeline, train_losses, val_losses, learning_rates, smoothed_train_losses, smoothed_val_losses, smoothed_learning_rates, label) in enumerate(experiments):
-            if smoothed_train_losses is not None:
+            if smoothed_val_losses is not None:
                 plt.plot(timeline, np.log(val_losses), color=colors[i], alpha=0.25)
                 plt.plot(timeline, np.log(smoothed_val_losses), color=colors[i], label=label)
             else:
@@ -238,7 +239,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
 
         plt.subplot(1, 3, 3)
         for i, (timeline, train_losses, val_losses, learning_rates, smoothed_train_losses, smoothed_val_losses, smoothed_learning_rates, label) in enumerate(experiments):
-            if smoothed_train_losses is not None:
+            if i == 0 and smoothed_learning_rates is not None:
                 plt.plot(timeline, learning_rates, color=colors[i], alpha=0.25)
                 plt.plot(timeline, smoothed_learning_rates, color=colors[i], label=label)
             else:

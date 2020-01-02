@@ -59,11 +59,11 @@ if __name__ == '__main__':
         n_steps=args.ppo2_update_freq,
         ent_coef=args.ppo2_ent_coef,
         learning_rate=args.ppo2_lr,
-        nminibatches=1,
+        nminibatches=4,
         verbose=1,
         policy_kwargs={
             'act_fun': tf.nn.relu,
-            'net_arch': [{'pi': [64, 32], 'vf': [64, 32]}]
+            'net_arch': [{'pi': [32], 'vf': [32]}]
         },
         tensorboard_log='data/tensorboard/ppo2_alrs'
     )

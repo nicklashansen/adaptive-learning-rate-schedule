@@ -32,18 +32,37 @@ if __name__ == '__main__':
         initial_lr=args.initial_lr,
         num_devices=args.num_devices
     )
-    env.set_random_state(0)
 
-    state = env.reset()
-    done = False
+    def run_baseline(env, mode):
+        """
+        Constant (initial LR)
+        """
+        env.reset()
+        done = False
+        step_count = 0
 
-    while not done:
-        state, _, done, _ = env.step(2)
-        try:
-            env.render()
-        except:
-            print('Warning: device does not support rendering. Skipping...')
+        while not done:
 
-    utils.save_baseline(env.info_list, 'initial_lr')
+            action = 2
+
+            if mode == 'step_decay':
+                if step_count == 50:
+                    action = 0
+                elif step_count in {400, 800}:
+                    action = 1
+
+            _, _, done, _ = env.step(action)
+            step_count += args.update_freq
+
+            try:
+                env.render()
+            except:
+                print('Warning: device does not support rendering. Skipping...')
+
+        utils.save_baseline(env.info_list, mode)
+
+    run_baseline(env, 'initial_lr')
+    run_baseline(env, 'step_decay')
+
     print('Testing terminated successfully!')
     

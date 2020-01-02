@@ -84,7 +84,7 @@ def parse_args():
 	parser.add_argument(
 		'--ppo2-lr',
 		type=float,
-		default=3e-4,
+		default=1e-4,
 		help='learning rate of the PPO2 controller'
 	)
 	parser.add_argument(
@@ -102,14 +102,20 @@ def parse_args():
 	parser.add_argument(
 		'--ppo2-norm-reward',
 		type=int,
-		default=0,
+		default=1,
 		help='normalize rewards using an EMA: 0 | 1'
 	)
 	parser.add_argument(
 		'--test-id',
 		type=str,
-		default='ywxilp',
-		help='experiment id to load and evaluate (when running test.py)'
+		default='ycmehl_250000',
+		help='experiment id to load and search for schedules when running test.py (mutually exclusive with --test-schedule)'
+	)
+	parser.add_argument(
+		'--test-schedule',
+		type=str,
+		default='none',
+		help='name of the learned schedule to evaluate when running test.py (mutually exclusive with --test-id)'
 	)
 	args = parser.parse_args()
 	assert args.ppo2_norm_obs in {0, 1}
@@ -127,7 +133,7 @@ def args_to_str(args, separate_lines=True):
 	"""
 	Pretty-printing of command line arguments.
 	"""
-	string = str(args)[:-1].replace('Namespace(', '').replace(' ', '')
+	string = str(args)[:-1].replace('Namespace(', '').replace('{', '').replace('\'', '').replace(':', '=').replace(' ', '')
 	if separate_lines:
 		string = string.replace(',', '\n')
 	
