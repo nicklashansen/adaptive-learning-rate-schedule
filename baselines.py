@@ -18,9 +18,16 @@ if __name__ == '__main__':
     data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
 
     if args.dataset == 'mnist':
+        data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
         net_fn = lambda: networks.MLP(784, 256, 128, 10)
+
     elif args.dataset == 'cifar10':
-        net_fn = lambda: networks.CNN_MLP(channels=(3,16,8,4), kernel_sizes=(5,5,5), paddings=(0,0,0), sizes=(1600,10))
+        data = utils.load_cifar10(num_train=args.num_train, num_val=args.num_val)
+        net_fn = lambda: LeNet5(num_channels_in=3, num_classes=10, img_dims=(32, 32))
+
+    elif args.dataset == 'fa-mnist':
+        data = utils.load_fashion_mnist(num_train=args.num_train, num_val=args.num_val)
+        net_fn = lambda: LeNet5(num_channels_in=1, num_classes=10, img_dims=(28, 28))
 
     env = AdaptiveLearningRateOptimizer(
         train_dataset=data[0],

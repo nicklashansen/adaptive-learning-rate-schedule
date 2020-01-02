@@ -263,7 +263,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
                 plt.plot(timeline, np.log(smoothed_train_losses), color=colors[i], label=label)
             else:
                 plt.plot(timeline, np.log(train_losses), color=colors[i], label=label)
-        plt.xlabel('Training steps')
+        plt.xlabel('Train steps')
         plt.ylabel('Log training loss')
         plt.legend(loc='upper right')
 
@@ -274,7 +274,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
                 plt.plot(timeline, np.log(smoothed_val_losses), color=colors[i], label=label)
             else:
                 plt.plot(timeline, np.log(val_losses), color=colors[i], label=label)
-        plt.xlabel('Training steps')
+        plt.xlabel('Train steps')
         plt.ylabel('Log validation loss')
         plt.legend(loc='upper right')
 
@@ -285,7 +285,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
                 plt.plot(timeline, smoothed_learning_rates, color=colors[i], label=label)
             else:
                 plt.plot(timeline, learning_rates, color=colors[i], label=label)
-        plt.xlabel('Training steps')
+        plt.xlabel('Train steps')
         plt.ylabel('Learning rate')
         plt.legend(loc='upper right')
 

@@ -32,14 +32,14 @@ if __name__ == '__main__':
         try:
             exp_id = args.test_id.split('_')[0] if '_' in args.test_id else args.test_id
             experiment_args = utils.load_args_file_as_dict(exp_id)
-            print(f'Running PPO2 controller for ALRS testing...\Trained with args:\n{utils.args_to_str(experiment_args)}\n')
+            print(f'Running PPO2 controller for ALRS testing...\nTrained with args:\n{utils.args_to_str(experiment_args)}\n')
             print(f'Experiment ID:', args.test_id)
         except:
             raise ValueError(f'Experiment with id {args.test_id} could not be found!')
 
         experiment_dataset = experiment_args['dataset']
         if args.dataset != experiment_dataset:
-            raise Warning(f'Agent is tested on {args.data} but was trained on {experiment_dataset}.')
+            raise Warning(f'Agent is tested on {args.dataset} but was trained on {experiment_dataset}.')
     
     else:
         print(f'Running saved schedule for ALRS testing...\nArgs:\n{utils.args_to_str(args)}\n')
@@ -49,8 +49,12 @@ if __name__ == '__main__':
         net_fn = lambda: networks.MLP(784, 256, 128, 10)
 
     elif args.dataset == 'cifar10':
-        data = utils.load_cifar(num_train=args.num_train, num_val=args.num_val)
-        net_fn = lambda: LeNet5(num_classes=10)
+        data = utils.load_cifar10(num_train=args.num_train, num_val=args.num_val)
+        net_fn = lambda: LeNet5(num_channels_in=3, num_classes=10, img_dims=(32, 32))
+
+    elif args.dataset == 'fa-mnist':
+        data = utils.load_fashion_mnist(num_train=args.num_train, num_val=args.num_val)
+        net_fn = lambda: LeNet5(num_channels_in=1, num_classes=10, img_dims=(28, 28))
 
     env = make_vec_env(
         env_id=AdaptiveLearningRateOptimizer,

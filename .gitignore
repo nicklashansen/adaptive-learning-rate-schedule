@@ -134,6 +134,7 @@ dmypy.json
 # Datasets
 data/cifar-10-batches-py/
 data/mnist.npz
+data/FashionMNIST/
 
 # vscode
 .vscode/

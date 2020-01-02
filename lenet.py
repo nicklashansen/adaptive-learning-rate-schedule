@@ -5,10 +5,11 @@ class LeNet5(nn.Module):
     """
     Implementation of LeNet-5 as described in http://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf.
     """
-    def __init__(self, num_channels_in=3, num_classes=10):
+    def __init__(self, num_channels_in=3, num_classes=10, img_dims=(32, 32)):
         super(LeNet5, self).__init__()
+        assert img_dims == (32, 32) or (28, 28)
         self.conv = nn.Sequential(
-            nn.Conv2d(num_channels_in, 6, kernel_size=(5, 5)),
+            nn.Conv2d(num_channels_in, 6, kernel_size=(5, 5), padding=(0, 0) if img_dims == (32, 32) else (2, 2)),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(2, 2), stride=2),
             nn.Conv2d(6, 16, kernel_size=(5, 5)),

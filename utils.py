@@ -19,7 +19,7 @@ def parse_args():
 		'--dataset',
 		type=str,
 		default='mnist',
-		help='dataset to use: mnist | cifar10'
+		help='dataset to use: mnist | cifar10 | fa-mnist'
 	)
 	parser.add_argument(
 		'--num-train',
@@ -112,6 +112,12 @@ def parse_args():
 		help='normalize rewards using an EMA: 0 | 1'
 	)
 	parser.add_argument(
+		'--tb-suffix',
+		type=str,
+		default='none',
+		help='optional suffix for the experiment id displayed in tensorboard'
+	)
+	parser.add_argument(
 		'--test-id',
 		type=str,
 		default='ycmehl_250000',
@@ -131,8 +137,11 @@ def parse_args():
 	args.ppo2_norm_obs = bool(args.ppo2_norm_obs)
 	args.ppo2_norm_reward = bool(args.ppo2_norm_reward)
 	args.cuda = torch.cuda.is_available()
-	assert args.dataset in {'mnist', 'cifar10'}
+	assert args.dataset in {'mnist', 'cifar10', 'fa-mnist'}
 	assert args.num_devices in {1, 2, 3, 4}
+	
+	if args.tb_suffix == 'none':
+		args.tb_suffix = None
 
 	return args
 
@@ -186,9 +195,9 @@ class Dataset(torch.utils.data.Dataset):
 		return self.X[idx], self.y[idx]
 
 
-def load_cifar(num_train=50000, num_val=10000):
+def load_cifar10(num_train=50000, num_val=10000):
 	"""
-	Loads a subset of the CIFAR dataset and returns it as a tuple.
+	Loads (a subset of) the CIFAR-10 dataset and returns it as a tuple.
 	"""
 	transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5),(0.5, 0.5, 0.5))])
 
@@ -201,9 +210,24 @@ def load_cifar(num_train=50000, num_val=10000):
 	return train_dataset, val_dataset
 
 
+def load_fashion_mnist(num_train=50000, num_val=10000):
+	"""
+	Loads (a subset of) the Fashion-MNIST dataset and returns it as a tuple.
+	"""
+	transform = transforms.Compose([transforms.ToTensor()])
+
+	train_dataset = torchvision.datasets.FashionMNIST(root='./data', train=True, download=True, transform=transform)
+	val_dataset = torchvision.datasets.FashionMNIST(root='./data', train=False, download=True, transform=transform)
+
+	train_dataset, _ = torch.utils.data.random_split(train_dataset, lengths=[num_train, len(train_dataset)-num_train])
+	val_dataset, _ = torch.utils.data.random_split(val_dataset, lengths=[num_val, len(val_dataset)-num_val])
+
+	return train_dataset, val_dataset
+
+
 def load_mnist(filename='data/mnist.npz', num_train=50000, num_val=10000):
 	"""
-	Loads a subset of the grayscale MNIST dataset and returns it as a tuple.
+	Loads (a subset of) the grayscale MNIST dataset and returns it as a tuple.
 	"""
 	data = np.load(filename)
 

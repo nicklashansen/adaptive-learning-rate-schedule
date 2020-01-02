@@ -32,8 +32,12 @@ if __name__ == '__main__':
         net_fn = lambda: networks.MLP(784, 256, 128, 10)
 
     elif args.dataset == 'cifar10':
-        data = utils.load_cifar(num_train=args.num_train, num_val=args.num_val)
-        net_fn = lambda: LeNet5(num_classes=10)
+        data = utils.load_cifar10(num_train=args.num_train, num_val=args.num_val)
+        net_fn = lambda: LeNet5(num_channels_in=3, num_classes=10, img_dims=(32, 32))
+
+    elif args.dataset == 'fa-mnist':
+        data = utils.load_fashion_mnist(num_train=args.num_train, num_val=args.num_val)
+        net_fn = lambda: LeNet5(num_channels_in=1, num_classes=10, img_dims=(28, 28))
 
     env = make_vec_env(
         env_id=AdaptiveLearningRateOptimizer,
@@ -71,7 +75,7 @@ if __name__ == '__main__':
         verbose=1,
         policy_kwargs={
             'act_fun': tf.nn.relu,
-            'net_arch': [{'pi': [32], 'vf': [32]}]
+            'net_arch': [{'pi': [32, 32], 'vf': [32, 32]}]
         },
         tensorboard_log='data/tensorboard/ppo2_alrs'
     )
@@ -96,9 +100,13 @@ if __name__ == '__main__':
 
         return True
 
+    tb_log_name = experiment_id
+    if args.tb_suffix is not None:
+        tb_log_name += args.tb_suffix
+
     model.learn(
         total_timesteps=args.ppo2_total_timesteps,
-        tb_log_name=experiment_id,
+        tb_log_name=tb_log_name,
         reset_num_timesteps=False,
         callback=callback
     )
