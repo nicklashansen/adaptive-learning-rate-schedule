@@ -8,6 +8,7 @@ import setproctitle
 from smallrl import algorithms, environments, networks, demos
 from environment import AdaptiveLearningRateOptimizer
 import utils
+from torchvision.models.resnet import resnet18
 from lenet import LeNet5
 
 with warnings.catch_warnings():  
@@ -33,7 +34,7 @@ if __name__ == '__main__':
 
     elif args.dataset == 'cifar10':
         data = utils.load_cifar10(num_train=args.num_train, num_val=args.num_val)
-        net_fn = lambda: LeNet5(num_channels_in=3, num_classes=10, img_dims=(32, 32))
+        net_fn = lambda: resnet18(num_classes=10)
 
     elif args.dataset == 'fa-mnist':
         data = utils.load_fashion_mnist(num_train=args.num_train, num_val=args.num_val)
@@ -89,20 +90,25 @@ if __name__ == '__main__':
         """
         global experiment_id, best_episode_reward, model, args
 
+        minor_save_interval = 2000  if args.dataset == 'mnist' else 1000
+        major_save_interval = 50000 if args.dataset == 'mnist' else 10000
+
         if model.episode_reward > best_episode_reward:
             print(f'Achieved new maximum reward: {float(model.episode_reward)} (previous: {float(best_episode_reward)})')
             best_episode_reward = float(model.episode_reward)
             model.save('data/'+experiment_id)
         
-        save_interval = 50000 if args.dataset == 'mnist' else 10000
-        if model.num_timesteps % save_interval == 0 and model.num_timesteps > 0:
+        if model.num_timesteps % minor_save_interval == 0 and model.num_timesteps > 0:
+            model.save('data/'+experiment_id+'_current')
+        
+        if model.num_timesteps % major_save_interval == 0 and model.num_timesteps > 0:
             model.save('data/'+experiment_id+'_'+str(model.num_timesteps))
 
         return True
 
     tb_log_name = experiment_id
     if args.tb_suffix is not None:
-        tb_log_name += args.tb_suffix
+        tb_log_name += '__'+args.tb_suffix
 
     model.learn(
         total_timesteps=args.ppo2_total_timesteps,

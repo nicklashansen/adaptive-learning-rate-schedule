@@ -4,6 +4,8 @@ import torch
 import os
 import warnings
 import setproctitle
+from torchvision.models.resnet import resnet18
+from lenet import LeNet5
 
 from smallrl import algorithms, environments, networks, demos
 from environment import AdaptiveLearningRateOptimizer
@@ -23,7 +25,7 @@ if __name__ == '__main__':
 
     elif args.dataset == 'cifar10':
         data = utils.load_cifar10(num_train=args.num_train, num_val=args.num_val)
-        net_fn = lambda: LeNet5(num_channels_in=3, num_classes=10, img_dims=(32, 32))
+        net_fn = lambda: resnet18(num_classes=10)
 
     elif args.dataset == 'fa-mnist':
         data = utils.load_fashion_mnist(num_train=args.num_train, num_val=args.num_val)
