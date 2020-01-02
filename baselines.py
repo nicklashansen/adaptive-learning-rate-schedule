@@ -30,7 +30,9 @@ if __name__ == '__main__':
         update_freq=args.update_freq,
         num_train_steps=args.num_train_steps,
         initial_lr=args.initial_lr,
-        num_devices=args.num_devices
+        num_devices=args.num_devices,
+        discrete=args.discrete,
+        verbose=False
     )
 
     def run_baseline(env, mode):

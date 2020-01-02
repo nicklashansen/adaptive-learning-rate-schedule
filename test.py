@@ -64,10 +64,16 @@ if __name__ == '__main__':
             'num_train_steps': args.num_train_steps,
             'initial_lr': args.initial_lr,
             'num_devices': args.num_devices,
+            'discrete': args.discrete,
             'verbose': False
         }
     )
-    env = VecNormalize(env, norm_obs=args.ppo2_norm_obs, norm_reward=args.ppo2_norm_reward, gamma=args.ppo2_gamma)
+    env = VecNormalize(
+        venv=env,
+        norm_obs=args.ppo2_norm_obs,
+        norm_reward=args.ppo2_norm_reward,
+        gamma=args.ppo2_gamma
+    )
 
     best_overall_val_loss = np.inf
 

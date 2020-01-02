@@ -64,6 +64,12 @@ def parse_args():
 		help='number of devices used for training of trainee networks: 1 | 2 | 3 | 4'
 	)
 	parser.add_argument(
+		'--discrete',
+		type=int,
+		default=0,
+		help='whether the learned schedule should be discrete or continuous: 0 | 1'
+	)
+	parser.add_argument(
 		'--ppo2-gamma',
 		type=float,
 		default=0.99,
@@ -118,8 +124,10 @@ def parse_args():
 		help='name of the learned schedule to evaluate when running test.py (mutually exclusive with --test-id)'
 	)
 	args = parser.parse_args()
+	assert args.discrete in {0, 1}
 	assert args.ppo2_norm_obs in {0, 1}
 	assert args.ppo2_norm_reward in {0, 1}
+	args.discrete = bool(args.discrete)
 	args.ppo2_norm_obs = bool(args.ppo2_norm_obs)
 	args.ppo2_norm_reward = bool(args.ppo2_norm_reward)
 	args.cuda = torch.cuda.is_available()

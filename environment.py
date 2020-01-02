@@ -26,34 +26,49 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         4: Variance of output weight matrix
         5: Learning rate
 
-    Actions (3):
-        0: Doubles the LR
-        1: Halves the LR
+    Actions - Discrete (3):
+        0: Doubles the learning rate
+        1: Halves the learning rate
         2: No-op
+
+    Actions - Continuous (1):
+        0: Scaling factor for the learning rate (0.5 to 2)
     """
-    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, num_devices, verbose=False):
+    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, num_devices, discrete=True, verbose=False):
         super().__init__()
 
         class SpecDummy():
             def __init__(self, id):
                 self.id = id
-        
-        self.spec = SpecDummy(id='AdaptiveLearningRate-v0')
+         
+        self.spec = SpecDummy(id='AdaptiveLearningRateContinuous-v0' if not discrete else 'AdaptiveLearningRate-v0')
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
         self.net_fn = net_fn
         self.batch_size = batch_size
         self.update_freq = update_freq
         self.num_train_steps = num_train_steps
-        self.action_space = spaces.Discrete(3)
+        self.initial_lr = initial_lr
+        self.num_devices = num_devices
+        self.discrete = discrete
+
+        if discrete:
+            self.action_space = spaces.Discrete(3)
+        else:
+            self.action_space = spaces.Box(
+                low=0.5,
+                high=2,
+                shape=(1,),
+                dtype=np.float32
+            )
+
         self.observation_space = spaces.Box(
                 low=-np.inf,
                 high=np.inf,
                 shape=(6,),
                 dtype=np.float32
             )
-        self.initial_lr = initial_lr
-        self.num_devices = num_devices
+
         self.verbose = verbose
         self.info_list = []
         self.seed(0)
@@ -67,19 +82,45 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         """
         self.random_state = np.random.RandomState(seed)
 
+
+    def _clip_lr(self):
+        """
+        Clips the learning rate to the [1e-6, 1] range.
+        """
+        self.lr = float(np.clip(self.lr, 1e-6, 1))
+
+
+    def _add_lr_noise(self, std=None, clip=True):
+        """
+        Adds Gaussian noise to the learning rate.
+        `std` denotes the standard deviation, default: 1/10 of the learning rate.
+        Optionally clips the learning rate.
+        """
+        if std is None:
+            std = float(self.lr / 10)
+
+        self.lr += float(torch.empty(1).normal_(mean=0, std=std))
+        
+        if clip:
+            self._clip_lr()
+
     
     def _update_lr(self, action, clip=True):
         """
         Updates the current learning rate according to a given action.
-        Optionally clips to [1e-6, 1] range.
+        Functionality depends on whether environment is discrete or continuous.
+        Optionally clips the learning rate.
         """
-        if action == 0:
-            self.lr *= 2
-        elif action == 1:
-            self.lr /= 2
-        if clip:
-            self.lr = np.clip(self.lr, 1e-6, 1)
-        if action != 2 and self.training_steps != 0:
+        if self.discrete:
+            if action == 0:
+                self.lr *= 2
+            elif action == 1:
+                self.lr /= 2
+        else:
+            self.lr *= action
+        
+        if self.training_steps != 0:
+            self._add_lr_noise(clip=clip)
             self.schedule.step()
 
 
@@ -169,7 +210,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.lambda_func = lambda _: self.lr/self.initial_lr
         self.schedule = torch.optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=self.lambda_func)
 
-        state, _, _, _ = self.step(action=2)
+        state, _, _, _ = self.step(action=2 if self.discrete else 1)
 
         return state
 
