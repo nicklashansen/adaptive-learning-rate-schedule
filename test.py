@@ -46,17 +46,11 @@ if __name__ == '__main__':
     else:
         print(f'Running saved schedule for ALRS testing...\nArgs:\n{utils.args_to_str(args)}\n')
 
-    if args.dataset == 'mnist':
-        data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
-        net_fn = lambda: networks.MLP(784, 256, 128, 10)
-
-    elif args.dataset == 'cifar10':
-        data = utils.load_cifar10(num_train=args.num_train, num_val=args.num_val)
-        net_fn = lambda: resnet18(num_classes=10)
-
-    elif args.dataset == 'fa-mnist':
-        data = utils.load_fashion_mnist(num_train=args.num_train, num_val=args.num_val)
-        net_fn = lambda: LeNet5(num_channels_in=1, num_classes=10, img_dims=(28, 28))
+    data, net_fn = utils.load_dataset_and_network(
+        dataset=args.dataset,
+        num_train=args.num_train,
+        num_val=args.num_val
+    )
 
     env = make_vec_env(
         env_id=AdaptiveLearningRateOptimizer,
@@ -82,9 +76,10 @@ if __name__ == '__main__':
     )
 
     best_overall_val_loss = np.inf
+    displayed_rendering_error = False
 
     def run_test(env):
-        global best_overall_val_loss
+        global best_overall_val_loss, displayed_rendering_error
 
         if test_id is not None:
             model = PPO2.load('data/'+test_id)
@@ -112,7 +107,9 @@ if __name__ == '__main__':
             try:
                 env.render()
             except:
-                print('Warning: device does not support rendering. Skipping...')
+                if not displayed_rendering_error:
+                    displayed_rendering_error = True
+                    print('Warning: device does not support rendering.')
 
         best_overall_val_loss = min(best_val_loss, best_overall_val_loss)
 

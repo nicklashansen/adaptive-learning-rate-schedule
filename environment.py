@@ -34,7 +34,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
     Actions - Continuous (1):
         0: Scaling factor for the learning rate (0.5 to 2)
     """
-    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, num_devices, discrete=True, verbose=False):
+    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, num_devices, discrete=True, lr_noise=True, verbose=False):
         super().__init__()
 
         class SpecDummy():
@@ -69,6 +69,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
                 dtype=np.float32
             )
 
+        self.lr_noise = lr_noise
         self.verbose = verbose
         self.info_list = []
         self.seed(0)
@@ -120,7 +121,8 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             self.lr *= action
         
         if self.training_steps != 0:
-            self._add_lr_noise(clip=clip)
+            if self.lr_noise:
+                self._add_lr_noise(clip=clip)
             self.schedule.step()
 
 
@@ -252,8 +254,8 @@ class AdaptiveLearningRateOptimizer(gym.Env):
 
         experiments = [
             self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule', smooth_kernel_size=smooth_kernel_size),
-            self._info_list_to_plot_metrics(utils.load_baseline('initial_lr'), label='Constant (initial LR)', smooth_kernel_size=smooth_kernel_size),
-            self._info_list_to_plot_metrics(utils.load_baseline('step_decay'), label='Step decay + warmup', smooth_kernel_size=smooth_kernel_size)
+            self._info_list_to_plot_metrics(utils.load_baseline('initial_lr_fa-mnist'), label='Constant (initial LR)', smooth_kernel_size=smooth_kernel_size),
+            self._info_list_to_plot_metrics(utils.load_baseline('step_decay_fa-mnist'), label='Step decay + warmup', smooth_kernel_size=smooth_kernel_size)
         ]
 
         plt.subplot(1, 3, 1)

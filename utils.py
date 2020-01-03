@@ -9,6 +9,10 @@ import string
 import random
 import json
 
+from smallrl import networks
+from torchvision.models.resnet import resnet18
+from lenet import LeNet5
+
 
 def parse_args():
 	"""
@@ -90,7 +94,7 @@ def parse_args():
 	parser.add_argument(
 		'--ppo2-lr',
 		type=float,
-		default=1e-4,
+		default=1e-3,
 		help='learning rate of the PPO2 controller'
 	)
 	parser.add_argument(
@@ -193,6 +197,28 @@ class Dataset(torch.utils.data.Dataset):
 
 	def __getitem__(self, idx):
 		return self.X[idx], self.y[idx]
+
+
+def load_dataset_and_network(dataset, num_train, num_val):
+	"""
+	Loads (a subset of) a specified dataset and its associated neural network architecture.
+	"""
+	if dataset == 'mnist':
+		data = load_mnist(num_train=num_train, num_val=num_val)
+		net_fn = lambda: networks.MLP(784, 256, 128, 10)
+
+	elif dataset == 'cifar10':
+		data = load_cifar10(num_train=num_train, num_val=num_val)
+		net_fn = lambda: resnet18(num_classes=10)
+
+	elif dataset == 'fa-mnist':
+		data = load_fashion_mnist(num_train=num_train, num_val=num_val)
+		net_fn = lambda: LeNet5(num_channels_in=1, num_classes=10, img_dims=(28, 28))
+
+	else:
+		raise ValueError(f'Dataset "{dataset}" is not supported.')
+
+	return data, net_fn
 
 
 def load_cifar10(num_train=50000, num_val=10000):

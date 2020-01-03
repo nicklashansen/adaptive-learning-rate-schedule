@@ -28,17 +28,11 @@ if __name__ == '__main__':
     print(f'Running PPO2 controller for ALRS training...\nArgs:\n{utils.args_to_str(args)}\n')
     print(f'Experiment ID:', experiment_id)
 
-    if args.dataset == 'mnist':
-        data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
-        net_fn = lambda: networks.MLP(784, 256, 128, 10)
-
-    elif args.dataset == 'cifar10':
-        data = utils.load_cifar10(num_train=args.num_train, num_val=args.num_val)
-        net_fn = lambda: resnet18(num_classes=10)
-
-    elif args.dataset == 'fa-mnist':
-        data = utils.load_fashion_mnist(num_train=args.num_train, num_val=args.num_val)
-        net_fn = lambda: LeNet5(num_channels_in=1, num_classes=10, img_dims=(28, 28))
+    data, net_fn = utils.load_dataset_and_network(
+        dataset=args.dataset,
+        num_train=args.num_train,
+        num_val=args.num_val
+    )
 
     env = make_vec_env(
         env_id=AdaptiveLearningRateOptimizer,
@@ -90,8 +84,8 @@ if __name__ == '__main__':
         """
         global experiment_id, best_episode_reward, model, args
 
-        minor_save_interval = 2000  if args.dataset == 'mnist' else 1000
-        major_save_interval = 50000 if args.dataset == 'mnist' else 10000
+        minor_save_interval = 2500  if args.dataset == 'mnist' else 1000
+        major_save_interval = 25000 if args.dataset == 'mnist' else 10000
 
         if model.episode_reward > best_episode_reward:
             print(f'Achieved new maximum reward: {float(model.episode_reward)} (previous: {float(best_episode_reward)})')

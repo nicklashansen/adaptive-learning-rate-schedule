@@ -17,19 +17,11 @@ if __name__ == '__main__':
     setproctitle.setproctitle('PPO2-ALRS')
     print(f'Running baseline methods for ALRS testing...\nArgs:\n{utils.args_to_str(args)}\n')
 
-    data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
-
-    if args.dataset == 'mnist':
-        data = utils.load_mnist(num_train=args.num_train, num_val=args.num_val)
-        net_fn = lambda: networks.MLP(784, 256, 128, 10)
-
-    elif args.dataset == 'cifar10':
-        data = utils.load_cifar10(num_train=args.num_train, num_val=args.num_val)
-        net_fn = lambda: resnet18(num_classes=10)
-
-    elif args.dataset == 'fa-mnist':
-        data = utils.load_fashion_mnist(num_train=args.num_train, num_val=args.num_val)
-        net_fn = lambda: LeNet5(num_channels_in=1, num_classes=10, img_dims=(28, 28))
+    data, net_fn = utils.load_dataset_and_network(
+        dataset=args.dataset,
+        num_train=args.num_train,
+        num_val=args.num_val
+    )
 
     env = AdaptiveLearningRateOptimizer(
         train_dataset=data[0],
@@ -41,13 +33,18 @@ if __name__ == '__main__':
         initial_lr=args.initial_lr,
         num_devices=args.num_devices,
         discrete=args.discrete,
+        lr_noise=False,
         verbose=False
     )
+
+    displayed_rendering_error = False
 
     def run_baseline(env, mode):
         """
         Constant (initial LR)
         """
+        global displayed_rendering_error
+
         env.reset()
         done = False
         step_count = 0
@@ -68,12 +65,16 @@ if __name__ == '__main__':
             try:
                 env.render()
             except:
-                print('Warning: device does not support rendering. Skipping...')
+                if not displayed_rendering_error:
+                    displayed_rendering_error = True
+                    print('Warning: device does not support rendering.')
 
-        utils.save_baseline(env.info_list, mode)
+        utils.save_baseline(env.info_list, mode+'_'+args.dataset)
 
-    run_baseline(env, 'initial_lr')
-    run_baseline(env, 'step_decay')
+    for baseline in ['initial_lr', 'step_decay']:
+        print(f'Running {baseline} baseline...')
+        run_baseline(env, baseline)
+        print('Done!')
 
     print('Testing terminated successfully!')
     
