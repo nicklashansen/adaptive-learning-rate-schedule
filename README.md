@@ -40,7 +40,7 @@ In the discrete setting:
 
 In the continuous setting:
 
-[!alrs-cont](https://i.imgur.com/mksi6Ll.png)
+![alrs-cont](https://i.imgur.com/mksi6Ll.png)
 
 
 ### Fa-MNIST and CIFAR10
