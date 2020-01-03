@@ -30,8 +30,19 @@ python test.py --test-id [your experiment id]
 
 ## Results
 
-Below is shown an example of a learned adaptive (discrete) learning rate schedule for an MLP trained on MNIST. A constant learning rate schedule and a step decay + warmup schedule are displayed for comparison. The learned learning rate schedule converges considerably faster than the baseline schedules and achieves a lower validation loss despite its higher training loss, suggesting that the controller has learned to optimize for generalization.
+### MNIST
 
-![alrs](https://i.imgur.com/JBrOZUD.png)
+Below is shown an examples of learned adaptive discrete and continuous learning rate schedules for an MLP trained on MNIST. A constant learning rate schedule and a step decay + warmup schedule is displayed for comparison. The learned learning rate schedule converges considerably faster than the baseline schedules and achieves a similar validation loss despite its higher training loss, suggesting that the controller has learned to optimize for generalization.
+
+In the discrete setting:
+
+![alrs-disc](https://i.imgur.com/JBrOZUD.png)
+
+In the continuous setting:
+
+[!alrs-cont](https://i.imgur.com/mksi6Ll.png)
+
+
+### Fa-MNIST and CIFAR10
 
 More experiments will be posted as I progress.
