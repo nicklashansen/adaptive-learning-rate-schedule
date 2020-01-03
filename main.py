@@ -66,7 +66,9 @@ if __name__ == '__main__':
         n_steps=args.ppo2_update_freq,
         ent_coef=args.ppo2_ent_coef,
         learning_rate=args.ppo2_lr,
-        nminibatches=4,
+        nminibatches=args.ppo2_nminibatches,
+        noptepochs=args.ppo2_noptepochs,
+        cliprange=args.ppo2_cliprange,
         verbose=1,
         policy_kwargs={
             'act_fun': tf.nn.relu,

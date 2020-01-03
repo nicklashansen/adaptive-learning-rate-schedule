@@ -40,9 +40,6 @@ if __name__ == '__main__':
     displayed_rendering_error = False
 
     def run_baseline(env, mode):
-        """
-        Constant (initial LR)
-        """
         global displayed_rendering_error
 
         env.reset()

@@ -104,6 +104,24 @@ def parse_args():
 		help='total timesteps of the PPO2 controller'
 	)
 	parser.add_argument(
+		'--ppo2-nminibatches',
+		type=int,
+		default=4,
+		help='number of minibatches per update of the PPO2 controller'
+	)
+	parser.add_argument(
+		'--ppo2-noptepochs',
+		type=int,
+		default=4,
+		help='number of epochs when optimizing the surrogate objective function of the PPO2 controller'
+	)
+	parser.add_argument(
+		'--ppo2-cliprange',
+		type=float,
+		default=-1,
+		help='clip range of policy and value function of the PPO2 controller (-1 means no clipping)'
+	)
+	parser.add_argument(
 		'--ppo2-norm-obs',
 		type=int,
 		default=1,

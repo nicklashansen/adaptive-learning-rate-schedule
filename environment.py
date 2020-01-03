@@ -94,11 +94,11 @@ class AdaptiveLearningRateOptimizer(gym.Env):
     def _add_lr_noise(self, std=None, clip=True):
         """
         Adds Gaussian noise to the learning rate.
-        `std` denotes the standard deviation, default: 1/10 of the learning rate.
+        `std` denotes the standard deviation, default: 1/20 of the current learning rate.
         Optionally clips the learning rate.
         """
         if std is None:
-            std = float(self.lr / 10)
+            std = float(self.lr / 20)
 
         self.lr += float(torch.empty(1).normal_(mean=0, std=std))
         
