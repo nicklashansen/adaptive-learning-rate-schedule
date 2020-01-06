@@ -34,7 +34,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
     Actions - Continuous (1):
         0: Scaling factor for the learning rate (0.5 to 2)
     """
-    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, num_devices, discrete=True, lr_noise=True, verbose=False):
+    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, num_devices, discrete=True, action_range=1.5, lr_noise=True, verbose=False):
         super().__init__()
 
         class SpecDummy():
@@ -49,15 +49,17 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.update_freq = update_freq
         self.num_train_steps = num_train_steps
         self.initial_lr = initial_lr
+        self.ep_initial_lr = initial_lr
         self.num_devices = num_devices
         self.discrete = discrete
+        self.action_range = action_range
 
         if discrete:
             self.action_space = spaces.Discrete(3)
         else:
             self.action_space = spaces.Box(
-                low=0.5,
-                high=2,
+                low=1/self.action_range,
+                high=1*self.action_range,
                 shape=(1,),
                 dtype=np.float32
             )
@@ -94,11 +96,12 @@ class AdaptiveLearningRateOptimizer(gym.Env):
     def _add_lr_noise(self, std=None, clip=True):
         """
         Adds Gaussian noise to the learning rate.
-        `std` denotes the standard deviation, default: 1/20 of the current learning rate.
+        `std` denotes the standard deviation.
         Optionally clips the learning rate.
         """
         if std is None:
-            std = float(self.lr / 20)
+            #std = float(self.lr / 20)
+            std = 1e-6
 
         self.lr += float(torch.empty(1).normal_(mean=0, std=std))
         
@@ -114,9 +117,9 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         """
         if self.discrete:
             if action == 0:
-                self.lr *= 2
+                self.lr *= self.action_range
             elif action == 1:
-                self.lr /= 2
+                self.lr /= self.action_range
         else:
             self.lr *= action
         
@@ -207,9 +210,11 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             with torch.cuda.device(self.device):
                 self.net.cuda()
 
-        self.optimizer = torch.optim.Adam(self.net.parameters(), lr=self.initial_lr)
-        self.lr = self.initial_lr
-        self.lambda_func = lambda _: self.lr/self.initial_lr
+        #self.ep_initial_lr = float(np.random.choice([self.initial_lr*0.1, self.initial_lr, self.initial_lr*10]))
+        self.ep_initial_lr = self.initial_lr
+        self.optimizer = torch.optim.Adam(self.net.parameters(), lr=self.ep_initial_lr)
+        self.lr = self.ep_initial_lr
+        self.lambda_func = lambda _: self.lr/self.ep_initial_lr
         self.schedule = torch.optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=self.lambda_func)
 
         state, _, _, _ = self.step(action=2 if self.discrete else 1)

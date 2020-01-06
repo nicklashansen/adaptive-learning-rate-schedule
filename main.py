@@ -16,7 +16,7 @@ with warnings.catch_warnings():
     import tensorflow as tf
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
     from stable_baselines.common.policies import MlpPolicy, LstmPolicy, MlpLstmPolicy
-    from stable_baselines.common import make_vec_env
+    from stable_baselines.common import make_vec_env, schedules
     from stable_baselines.common.vec_env import VecNormalize
     from stable_baselines import PPO2
 
@@ -47,6 +47,7 @@ if __name__ == '__main__':
             'initial_lr': args.initial_lr,
             'num_devices': args.num_devices,
             'discrete': args.discrete,
+            'action_range': args.action_range,
             'verbose': False
         }
     )
@@ -54,9 +55,21 @@ if __name__ == '__main__':
         venv=env,
         norm_obs=args.ppo2_norm_obs,
         norm_reward=args.ppo2_norm_reward,
-        clip_obs=10,
-        clip_reward=10,
+        clip_obs=args.ppo2_cliprange if args.ppo2_cliprange > 0 else 10,
+        clip_reward=args.ppo2_cliprange if args.ppo2_cliprange > 0 else 10,
         gamma=args.ppo2_gamma
+    )
+
+    lr_schedule = schedules.LinearSchedule(
+        schedule_timesteps=args.ppo2_total_timesteps,
+        initial_p=args.ppo2_lr,
+        final_p=args.ppo2_lr*0.1
+    )
+
+    ent_coef_schedule = schedules.LinearSchedule(
+        schedule_timesteps=args.ppo2_total_timesteps,
+        initial_p=args.ppo2_ent_coef,
+        final_p=args.ppo2_ent_coef*0.01
     )
 
     model = PPO2(
@@ -65,7 +78,7 @@ if __name__ == '__main__':
         gamma=args.ppo2_gamma,
         n_steps=args.ppo2_update_freq,
         ent_coef=args.ppo2_ent_coef,
-        learning_rate=args.ppo2_lr,
+        learning_rate=lr_schedule.value,
         nminibatches=args.ppo2_nminibatches,
         noptepochs=args.ppo2_noptepochs,
         cliprange=args.ppo2_cliprange,
@@ -84,10 +97,12 @@ if __name__ == '__main__':
         """
         Callback called every n steps.
         """
-        global experiment_id, best_episode_reward, model, args
+        global experiment_id, best_episode_reward, model, ent_coef_schedule, args
 
-        minor_save_interval = 2500  if args.dataset == 'mnist' else 1000
-        major_save_interval = 25000 if args.dataset == 'mnist' else 10000
+        minor_save_interval = 2500  if args.dataset == 'mnist' else 500
+        major_save_interval = 25000 if args.dataset == 'mnist' else 5000
+
+        model.ent_coef = ent_coef_schedule.value(model.num_timesteps)
 
         if model.episode_reward > best_episode_reward:
             print(f'Achieved new maximum reward: {float(model.episode_reward)} (previous: {float(best_episode_reward)})')

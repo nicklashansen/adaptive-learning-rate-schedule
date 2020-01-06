@@ -22,7 +22,7 @@ def parse_args():
 	parser.add_argument(
 		'--dataset',
 		type=str,
-		default='mnist',
+		default='fa-mnist',
 		help='dataset to use: mnist | cifar10 | fa-mnist'
 	)
 	parser.add_argument(
@@ -74,6 +74,12 @@ def parse_args():
 		help='whether the learned schedule should be discrete or continuous: 0 | 1'
 	)
 	parser.add_argument(
+		'--action-range',
+		type=float,
+		default=2.0,
+		help='factor that controls the maximum change of learning per step'
+	)
+	parser.add_argument(
 		'--ppo2-gamma',
 		type=float,
 		default=0.99,
@@ -88,7 +94,7 @@ def parse_args():
 	parser.add_argument(
 		'--ppo2-ent-coef',
 		type=float,
-		default=0.01,
+		default=0.1,
 		help='entropy coefficient of the PPO2 controller'
 	)
 	parser.add_argument(
@@ -100,7 +106,7 @@ def parse_args():
 	parser.add_argument(
 		'--ppo2-total-timesteps',
 		type=int,
-		default=1000000,
+		default=40000,
 		help='total timesteps of the PPO2 controller'
 	)
 	parser.add_argument(
@@ -118,7 +124,7 @@ def parse_args():
 	parser.add_argument(
 		'--ppo2-cliprange',
 		type=float,
-		default=-1,
+		default=10,
 		help='clip range of policy and value function of the PPO2 controller (-1 means no clipping)'
 	)
 	parser.add_argument(
@@ -142,7 +148,7 @@ def parse_args():
 	parser.add_argument(
 		'--test-id',
 		type=str,
-		default='ycmehl_250000',
+		default='evhcey_10000',
 		help='experiment id to load and search for schedules when running test.py (mutually exclusive with --test-schedule)'
 	)
 	parser.add_argument(

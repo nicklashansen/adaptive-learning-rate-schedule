@@ -65,14 +65,9 @@ if __name__ == '__main__':
             'initial_lr': args.initial_lr,
             'num_devices': args.num_devices,
             'discrete': args.discrete,
+            'action_range': args.action_range,
             'verbose': False
         }
-    )
-    env = VecNormalize(
-        venv=env,
-        norm_obs=args.ppo2_norm_obs,
-        norm_reward=args.ppo2_norm_reward,
-        gamma=args.ppo2_gamma
     )
 
     best_overall_val_loss = np.inf
@@ -102,7 +97,7 @@ if __name__ == '__main__':
                 action = actions.pop(0) if len(actions) > 0 else 2
                 env.step(action)
             
-            best_val_loss = min(env.venv.envs[0].info_list[-1]['val_loss'], best_val_loss)
+            best_val_loss = min(env.envs[0].info_list[-1]['val_loss'], best_val_loss)
 
             try:
                 env.render()
