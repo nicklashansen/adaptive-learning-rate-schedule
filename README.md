@@ -15,7 +15,7 @@ Observations for the controller contain information about current training loss,
 You can run the experiments by running the `main.py` script from the terminal:
 
 ```
-python main.py --dataset cifar10 --discrete 0 --num-devices 4 --ppo2-lr 1e-3 --ppo2-total-timesteps 1000000
+python main.py --dataset cifar10 --num-devices 4
 ```
 
 Refer to the `parse_args()` function definition in `utils.py` for a full list of command line arguments.
@@ -24,7 +24,7 @@ After training, you can evaluate the learned adaptive learning rate schedule and
 
 ```
 python baselines.py --dataset cifar10
-python test.py --dataset cifar10 --discrete 0 --test-id [your experiment id]
+python test.py --dataset cifar10 --test-id [your experiment id]
 ```
 
 
