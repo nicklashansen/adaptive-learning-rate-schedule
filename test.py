@@ -66,6 +66,14 @@ if __name__ == '__main__':
             'verbose': False
         }
     )
+    env = VecNormalize(
+        venv=env,
+        norm_obs=args.ppo2_norm_obs,
+        norm_reward=args.ppo2_norm_reward,
+        clip_obs=args.ppo2_cliprange if args.ppo2_cliprange > 0 else 10,
+        clip_reward=args.ppo2_cliprange if args.ppo2_cliprange > 0 else 10,
+        gamma=args.ppo2_gamma
+    )
 
     best_overall_val_loss = np.inf
     displayed_rendering_error = False

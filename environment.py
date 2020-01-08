@@ -216,13 +216,17 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.last_network_predictions = None
         self.info_list = []
         self.net = self.net_fn()
+        
         if self.cuda:
             with torch.cuda.device(self.device):
                 self.net.cuda()
 
-        self.ep_initial_lr = float(np.random.choice([self.initial_lr*0.1, self.initial_lr, self.initial_lr*10]))
-        self.ep_initial_lr += float(torch.empty(1).normal_(mean=0, std=self.ep_initial_lr/10))
-        self.ep_initial_lr = float(np.clip(self.ep_initial_lr, 1e-5, 1e-1))
+        if self.initial_lr is None:
+            self.ep_initial_lr = float(np.random.choice([1e-2, 1e-3, 1e-4]))
+            self.ep_initial_lr += float(torch.empty(1).normal_(mean=0, std=self.ep_initial_lr/10))
+            self.ep_initial_lr = float(np.clip(self.ep_initial_lr, 1e-5, 1e-1))
+        else:
+            self.ep_initial_lr = self.initial_lr
 
         self.lr = self.ep_initial_lr
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=self.ep_initial_lr)   
@@ -266,14 +270,18 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         sns.set(style='whitegrid')
         colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple']
         plt.ion()
-        plt.figure(0, figsize=(16, 4))
+        plt.figure(0, dpi=30)
         plt.clf()
 
-        experiments = [
-            self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule', smooth_kernel_size=smooth_kernel_size),
-            self._info_list_to_plot_metrics(utils.load_baseline('initial_lr_fa-mnist'), label='Constant (initial LR)', smooth_kernel_size=smooth_kernel_size),
-            self._info_list_to_plot_metrics(utils.load_baseline('step_decay_fa-mnist'), label='Step decay + warmup', smooth_kernel_size=smooth_kernel_size)
-        ]
+        try:
+            experiments = [
+                self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule', smooth_kernel_size=smooth_kernel_size)#,
+                #self._info_list_to_plot_metrics(utils.load_baseline('initial_lr_fa-mnist'), label='Constant (initial LR)', smooth_kernel_size=smooth_kernel_size),
+                #self._info_list_to_plot_metrics(utils.load_baseline('step_decay_fa-mnist'), label='Step decay + warmup', smooth_kernel_size=smooth_kernel_size)
+            ]
+        except:
+            print('Error: failed to load experiment data. One or files might be missing.')
+            return
 
         plt.subplot(1, 3, 1)
         for i, (timeline, train_losses, val_losses, learning_rates, smoothed_train_losses, smoothed_val_losses, smoothed_learning_rates, label) in enumerate(experiments):

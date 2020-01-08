@@ -64,7 +64,7 @@ def parse_args():
 	parser.add_argument(
 		'--action-range',
 		type=float,
-		default=1.1,
+		default=1.05,
 		help='factor that controls the maximum change of learning per step'
 	)
 	parser.add_argument(
@@ -136,7 +136,7 @@ def parse_args():
 	parser.add_argument(
 		'--test-id',
 		type=str,
-		default='ccxxss',
+		default='xkus_steps=100k',
 		help='experiment id to load and search for schedules when running test.py (mutually exclusive with --test-schedule)'
 	)
 	parser.add_argument(
