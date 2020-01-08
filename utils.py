@@ -22,7 +22,7 @@ def parse_args():
 	parser.add_argument(
 		'--dataset',
 		type=str,
-		default='fa-mnist',
+		default='mnist',
 		help='dataset to use: mnist | cifar10 | fa-mnist'
 	)
 	parser.add_argument(
@@ -82,7 +82,7 @@ def parse_args():
 	parser.add_argument(
 		'--ppo2-gamma',
 		type=float,
-		default=0.99,
+		default=1.0,
 		help='discount factor of the PPO2 controller'
 	)
 	parser.add_argument(
@@ -148,7 +148,7 @@ def parse_args():
 	parser.add_argument(
 		'--test-id',
 		type=str,
-		default='evhcey_10000',
+		default='ccxxss',
 		help='experiment id to load and search for schedules when running test.py (mutually exclusive with --test-schedule)'
 	)
 	parser.add_argument(

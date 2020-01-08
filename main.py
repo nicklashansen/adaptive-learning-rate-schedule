@@ -92,12 +92,13 @@ if __name__ == '__main__':
 
     utils.args_to_file(args, experiment_id)
     best_episode_reward = -np.inf
+    best_val_loss = np.inf
 
     def callback(_locals, _globals):
         """
         Callback called every n steps.
         """
-        global experiment_id, best_episode_reward, model, ent_coef_schedule, args
+        global experiment_id, best_episode_reward, best_val_loss, model, ent_coef_schedule, args
 
         minor_save_interval = 2500  if args.dataset == 'mnist' else 500
         major_save_interval = 25000 if args.dataset == 'mnist' else 5000
@@ -107,13 +108,19 @@ if __name__ == '__main__':
         if model.episode_reward > best_episode_reward:
             print(f'Achieved new maximum reward: {float(model.episode_reward)} (previous: {float(best_episode_reward)})')
             best_episode_reward = float(model.episode_reward)
-            model.save('data/'+experiment_id)
+            model.save('data/'+experiment_id+'_bestreward')
+
+        val_loss = model.env.venv.envs[0].env.info_list[-1]['val_loss']
+        if val_loss < best_val_loss and best_val_loss < 1:
+            print(f'Achieved new minimum val loss: {float(val_loss)} (previous: {float(best_val_loss)})')
+            best_val_loss = float(val_loss)
+            model.save(f'data/{experiment_id}_bestval={np.around(best_val_loss, decimals=4)}.zip')
         
         if model.num_timesteps % minor_save_interval == 0 and model.num_timesteps > 0:
             model.save('data/'+experiment_id+'_current')
         
         if model.num_timesteps % major_save_interval == 0 and model.num_timesteps > 0:
-            model.save('data/'+experiment_id+'_'+str(model.num_timesteps))
+            model.save('data/'+experiment_id+'_'+str(model.num_timesteps/100)+'k')
 
         return True
 

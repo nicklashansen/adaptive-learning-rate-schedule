@@ -54,6 +54,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.num_devices = num_devices
         self.discrete = discrete
         self.action_range = action_range
+        self.last_network_predictions = None
 
         if discrete:
             self.action_space = spaces.Discrete(3)
@@ -182,10 +183,10 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         state = np.array([
             train_loss.avg,
             val_loss.avg,
-            np.log(yhat_var.avg),
-            np.log(network_prediction_change_var),
+            yhat_var.avg,
+            network_prediction_change_var,
             output_layer_weights.mean().data,
-            np.log(output_layer_weights.var().cpu().data),
+            output_layer_weights.var().cpu().data,
             self.lr
         ], dtype=np.float32)
         reward = -val_loss.avg
@@ -195,8 +196,8 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             'val_loss': val_loss.avg,
             'lr': self.lr
         }
-        self.last_network_predictions = deepcopy(network_predictions)
         self.info_list.append(info)
+        self.last_network_predictions = deepcopy(network_predictions)
 
         if self.verbose and self.training_steps % (self.num_train_steps//10) == 0:
             print(f'Step {self.training_steps}/{self.num_train_steps}, train loss: {train_loss}, val_loss: {val_loss}, lr: {self.lr}, reward: {reward}')
