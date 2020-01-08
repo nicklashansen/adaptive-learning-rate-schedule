@@ -15,10 +15,6 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
     import tensorflow as tf
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-    from stable_baselines.common.policies import MlpPolicy, LstmPolicy, MlpLstmPolicy
-    from stable_baselines.common import make_vec_env, schedules
-    from stable_baselines.common.vec_env import VecNormalize
-    from stable_baselines import PPO2
 
 
 if __name__ == '__main__':
@@ -28,58 +24,8 @@ if __name__ == '__main__':
     print(f'Running PPO2 controller for ALRS training...\nArgs:\n{utils.args_to_str(args)}\n')
     print(f'Experiment ID:', experiment_id)
 
-    data, net_fn = utils.load_dataset_and_network(dataset=args.dataset)
-    train_data, val_data, _ = data[0], data[1], data[2]
-
-    env = make_vec_env(
-        env_id=AdaptiveLearningRateOptimizer,
-        n_envs=args.num_devices,
-        env_kwargs={
-            'train_dataset': train_data,
-            'val_dataset': val_data,
-            'net_fn': net_fn,
-            'batch_size': args.batch_size,
-            'update_freq': args.update_freq,
-            'num_train_steps': args.num_train_steps,
-            'initial_lr': args.initial_lr,
-            'num_devices': args.num_devices,
-            'discrete': args.discrete,
-            'action_range': args.action_range,
-            'verbose': False
-        }
-    )
-    env = VecNormalize(
-        venv=env,
-        norm_obs=args.ppo2_norm_obs,
-        norm_reward=args.ppo2_norm_reward,
-        clip_obs=args.ppo2_cliprange if args.ppo2_cliprange > 0 else 10,
-        clip_reward=args.ppo2_cliprange if args.ppo2_cliprange > 0 else 10,
-        gamma=args.ppo2_gamma
-    )
-
-    lr_schedule = schedules.LinearSchedule(
-        schedule_timesteps=args.ppo2_total_timesteps,
-        initial_p=args.ppo2_lr,
-        final_p=args.ppo2_lr*0.1
-    )
-
-    model = PPO2(
-        policy=MlpPolicy,
-        env=env,
-        gamma=args.ppo2_gamma,
-        n_steps=args.ppo2_update_freq,
-        ent_coef=args.ppo2_ent_coef,
-        learning_rate=lr_schedule.value,
-        nminibatches=args.ppo2_nminibatches,
-        noptepochs=args.ppo2_noptepochs,
-        cliprange=args.ppo2_cliprange,
-        verbose=1,
-        policy_kwargs={
-            'act_fun': tf.nn.relu,
-            'net_arch': [{'pi': [32, 32], 'vf': [32, 32]}]
-        },
-        tensorboard_log='data/tensorboard/ppo2_alrs'
-    )
+    env = utils.make_alrs_env(args)
+    model = utils.make_ppo2_controller(env, args)
 
     utils.args_to_file(args, experiment_id)
     best_episode_reward = -np.inf

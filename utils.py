@@ -8,6 +8,10 @@ import os
 import string
 import random
 import json
+import tensorflow as tf
+from stable_baselines.common.vec_env import VecNormalize
+from stable_baselines.common import make_vec_env, schedules, policies
+from stable_baselines import PPO2
 
 from smallrl import networks
 from torchvision.models.resnet import resnet18
@@ -46,7 +50,7 @@ def parse_args():
 	parser.add_argument(
 		'--initial-lr',
 		type=float,
-		default=1e-3,
+		default=1e-2,
 		help='initial learning rate of trainee networks'
 	)
 	parser.add_argument(
@@ -64,7 +68,7 @@ def parse_args():
 	parser.add_argument(
 		'--action-range',
 		type=float,
-		default=1.05,
+		default=1.1,
 		help='factor that controls the maximum change of learning per step'
 	)
 	parser.add_argument(
@@ -245,6 +249,75 @@ def load_dataset(dataset):
 	test_split = dataset_to_class[dataset](root='./data', train=False, download=True, transform=transform)
 
 	return train_split, val_split, test_split
+
+
+def make_alrs_env(args):
+	"""
+	Make a new ALRS environment with parameters specified as command line arguments.
+	"""
+	from environment import AdaptiveLearningRateOptimizer
+
+	data, net_fn = load_dataset_and_network(dataset=args.dataset)
+	train_data, val_data, _ = data[0], data[1], data[2]
+
+	env = make_vec_env(
+        env_id=AdaptiveLearningRateOptimizer,
+        n_envs=args.num_devices,
+        env_kwargs={
+            'train_dataset': train_data,
+            'val_dataset': val_data,
+            'net_fn': net_fn,
+            'batch_size': args.batch_size,
+            'update_freq': args.update_freq,
+            'num_train_steps': args.num_train_steps,
+            'initial_lr': args.initial_lr,
+            'num_devices': args.num_devices,
+            'discrete': args.discrete,
+            'action_range': args.action_range,
+            'verbose': False
+        }
+    )
+	env = VecNormalize(
+        venv=env,
+        norm_obs=args.ppo2_norm_obs,
+        norm_reward=args.ppo2_norm_reward,
+        clip_obs=args.ppo2_cliprange if args.ppo2_cliprange > 0 else 10,
+        clip_reward=args.ppo2_cliprange if args.ppo2_cliprange > 0 else 10,
+        gamma=args.ppo2_gamma
+    )
+
+	return env
+
+
+def make_ppo2_controller(env, args):
+	"""
+	Make a new PPO2 controller for the given environment using specified command line arguments.
+	"""
+	lr_schedule = schedules.LinearSchedule(
+        schedule_timesteps=args.ppo2_total_timesteps,
+        initial_p=args.ppo2_lr,
+        final_p=args.ppo2_lr*0.05
+    )
+
+	model = PPO2(
+        policy=policies.MlpPolicy,
+        env=env,
+        gamma=args.ppo2_gamma,
+        n_steps=args.ppo2_update_freq,
+        ent_coef=args.ppo2_ent_coef,
+        learning_rate=lr_schedule.value,
+        nminibatches=args.ppo2_nminibatches,
+        noptepochs=args.ppo2_noptepochs,
+        cliprange=args.ppo2_cliprange,
+        verbose=0,
+        policy_kwargs={
+            'act_fun': tf.nn.relu,
+            'net_arch': [{'pi': [32, 32], 'vf': [32, 32]}]
+        },
+        tensorboard_log='data/tensorboard/ppo2_alrs'
+    )
+
+	return model
 	
 
 def save_baseline(info_list, name):

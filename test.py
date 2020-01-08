@@ -46,34 +46,7 @@ if __name__ == '__main__':
     else:
         print(f'Running saved schedule for ALRS testing...\nArgs:\n{utils.args_to_str(args)}\n')
 
-    data, net_fn = utils.load_dataset_and_network(dataset=args.dataset)
-    train_data, val_data, _ = data[0], data[1], data[2]
-
-    env = make_vec_env(
-        env_id=AdaptiveLearningRateOptimizer,
-        n_envs=args.num_devices,
-        env_kwargs={
-            'train_dataset': train_data,
-            'val_dataset': val_data,
-            'net_fn': net_fn,
-            'batch_size': args.batch_size,
-            'update_freq': args.update_freq,
-            'num_train_steps': args.num_train_steps,
-            'initial_lr': args.initial_lr,
-            'num_devices': args.num_devices,
-            'discrete': args.discrete,
-            'action_range': args.action_range,
-            'verbose': False
-        }
-    )
-    env = VecNormalize(
-        venv=env,
-        norm_obs=args.ppo2_norm_obs,
-        norm_reward=args.ppo2_norm_reward,
-        clip_obs=args.ppo2_cliprange if args.ppo2_cliprange > 0 else 10,
-        clip_reward=args.ppo2_cliprange if args.ppo2_cliprange > 0 else 10,
-        gamma=args.ppo2_gamma
-    )
+    env = utils.make_alrs_env(args)
 
     best_overall_val_loss = np.inf
     displayed_rendering_error = False
