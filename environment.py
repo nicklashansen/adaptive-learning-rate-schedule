@@ -20,20 +20,21 @@ class AdaptiveLearningRateOptimizer(gym.Env):
     Can be used to learn an adaptive learning rate schedule.
 
     Observations (6):
-        0: Log training loss
-        1: Log validation loss
-        2: Log variance of predictions
-        3: Mean of output weight matrix
-        4: Variance of output weight matrix
-        5: Learning rate
+        0: Training loss
+        1: Validation loss
+        2: Variance of predictions
+        3: Variance of prediction changes
+        4: Mean of output weight matrix
+        5: Variance of output weight matrix
+        6: Learning rate
 
     Actions - Discrete (3):
-        0: Doubles the learning rate
-        1: Halves the learning rate
+        0: Increases the learning rate
+        1: Decreases the learning rate
         2: No-op
 
     Actions - Continuous (1):
-        0: Scaling factor for the learning rate (0.5 to 2)
+        0: Scaling factor for the learning rate
     """
     def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, num_devices, discrete=True, action_range=1.5, lr_noise=True, verbose=False):
         super().__init__()
@@ -76,7 +77,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.lr_noise = lr_noise
         self.verbose = verbose
         self.info_list = []
-        self.seed(0)
+        self.seed(np.random.randint(0, 2**32-1))
         self.cuda = torch.cuda.is_available()
         assert num_devices == 1 or self.cuda
 
@@ -92,7 +93,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         """
         Clips the learning rate to the [1e-5, 1e-1] range.
         """
-        self.lr = float(np.clip(self.lr, 1e-5, 0.1))
+        self.lr = float(np.clip(self.lr, 1e-5, 1e-1))
 
 
     def _add_lr_noise(self, std=None, clip=True):
@@ -100,13 +101,9 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         Adds Gaussian noise to the learning rate.
         `std` denotes the standard deviation. Optionally clips the learning rate.
         """
-        if std is None:
-            std = 1e-5
-
+        if std is None: std = 1e-5
         self.lr += float(torch.empty(1).normal_(mean=0, std=std))
-        
-        if clip:
-            self._clip_lr()
+        if clip: self._clip_lr()
 
     
     def _update_lr(self, action, clip=True):
@@ -223,10 +220,12 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             with torch.cuda.device(self.device):
                 self.net.cuda()
 
-        #self.ep_initial_lr = float(np.random.choice([self.initial_lr*0.1, self.initial_lr, self.initial_lr*10]))
-        self.ep_initial_lr = self.initial_lr
-        self.optimizer = torch.optim.Adam(self.net.parameters(), lr=self.ep_initial_lr)
+        self.ep_initial_lr = float(np.random.choice([self.initial_lr*0.1, self.initial_lr, self.initial_lr*10]))
+        self.ep_initial_lr += float(torch.empty(1).normal_(mean=0, std=self.ep_initial_lr/10))
+        self.ep_initial_lr = float(np.clip(self.ep_initial_lr, 1e-5, 1e-1))
+
         self.lr = self.ep_initial_lr
+        self.optimizer = torch.optim.Adam(self.net.parameters(), lr=self.ep_initial_lr)   
         self.lambda_func = lambda _: self.lr/self.ep_initial_lr
         self.schedule = torch.optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=self.lambda_func)
 
