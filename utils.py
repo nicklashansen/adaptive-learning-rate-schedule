@@ -238,8 +238,8 @@ def load_dataset(dataset):
 	"""
 	dataset_to_class = {
 		'mnist': torchvision.datasets.MNIST,
-		'cifar10': 'CIFAR10',
-		'fa-mnist': 'FashionMNIST'
+		'cifar10': torchvision.datasets.CIFAR10,
+		'fa-mnist': torchvision.datasets.FashionMNIST
 	}
 	assert dataset in dataset_to_class.keys()
 	transform = transforms.Compose([transforms.ToTensor()])

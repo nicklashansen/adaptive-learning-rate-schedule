@@ -41,15 +41,17 @@ if __name__ == '__main__':
         major_save_interval = 10000 if args.dataset == 'mnist' else 5000
 
         steps = str(int(model.num_timesteps/100))+'k'
-        val_loss = float(model.env.venv.envs[0].env.info_list[-1]['val_loss'])
+        val_loss = model.env.venv.envs[0].env.latest_end_val
 
-        summary = tf.Summary(value=[tf.Summary.Value(tag='val_loss', simple_value=val_loss)])
-        _locals['writer'].add_summary(summary, model.num_timesteps)
+        print('Val loss:', val_loss)
 
-        if val_loss < best_val_loss:
-            print(f'Achieved new minimum val loss: {val_loss} (previous: {best_val_loss})')
-            best_val_loss = val_loss
-            model.save(f'data/{experiment_id}_steps={steps}_val={str(np.around(best_val_loss, decimals=4))}.zip')
+        if val_loss is not None:
+            summary = tf.Summary(value=[tf.Summary.Value(tag='val_loss', simple_value=val_loss)])
+            _locals['writer'].add_summary(summary, model.num_timesteps)
+            if val_loss < best_val_loss:
+                print(f'Achieved new minimum val loss: {val_loss} (previous: {best_val_loss})')
+                best_val_loss = val_loss
+                model.save(f'data/{experiment_id}_steps={steps}_val={str(np.around(best_val_loss, decimals=4))}.zip')
 
         if model.num_timesteps % minor_save_interval == 0 and model.num_timesteps > 0:
             model.save(f'data/{experiment_id}_current')

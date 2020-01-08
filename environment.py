@@ -56,6 +56,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.discrete = discrete
         self.action_range = action_range
         self.last_network_predictions = None
+        self.latest_end_val = None
 
         if discrete:
             self.action_space = spaces.Discrete(3)
@@ -195,6 +196,9 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         }
         self.info_list.append(info)
         self.last_network_predictions = deepcopy(network_predictions)
+
+        if done:
+            self.latest_end_val = float(val_loss.avg)
 
         if self.verbose and self.training_steps % (self.num_train_steps//10) == 0:
             print(f'Step {self.training_steps}/{self.num_train_steps}, train loss: {train_loss}, val_loss: {val_loss}, lr: {self.lr}, reward: {reward}')
