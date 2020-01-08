@@ -28,11 +28,7 @@ if __name__ == '__main__':
     print(f'Running PPO2 controller for ALRS training...\nArgs:\n{utils.args_to_str(args)}\n')
     print(f'Experiment ID:', experiment_id)
 
-    data, net_fn = utils.load_dataset_and_network(
-        dataset=args.dataset,
-        num_train=args.num_train,
-        num_val=args.num_val
-    )
+    data, net_fn = utils.load_dataset_and_network(dataset=args.dataset)
 
     env = make_vec_env(
         env_id=AdaptiveLearningRateOptimizer,

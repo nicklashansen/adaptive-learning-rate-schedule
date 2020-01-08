@@ -26,18 +26,6 @@ def parse_args():
 		help='dataset to use: mnist | cifar10 | fa-mnist'
 	)
 	parser.add_argument(
-		'--num-train',
-		type=int,
-		default=50000,
-		help='number of training samples'
-	)
-	parser.add_argument(
-		'--num-val',
-		type=int,
-		default=10000,
-		help='number of validation samples'
-	)
-	parser.add_argument(
 		'--batch-size',
 		type=int,
 		default=1000,
@@ -223,75 +211,41 @@ class Dataset(torch.utils.data.Dataset):
 		return self.X[idx], self.y[idx]
 
 
-def load_dataset_and_network(dataset, num_train, num_val):
+def load_dataset_and_network(dataset,):
 	"""
-	Loads (a subset of) a specified dataset and its associated neural network architecture.
+	Loads a specified dataset and its associated neural network architecture.
 	"""
-	if dataset == 'mnist':
-		data = load_mnist(num_train=num_train, num_val=num_val)
-		net_fn = lambda: networks.MLP(784, 256, 128, 10)
+	data = load_dataset(dataset)
 
-	elif dataset == 'cifar10':
-		data = load_cifar10(num_train=num_train, num_val=num_val)
-		net_fn = lambda: resnet18(num_classes=10)
-
-	elif dataset == 'fa-mnist':
-		data = load_fashion_mnist(num_train=num_train, num_val=num_val)
-		net_fn = lambda: LeNet5(num_channels_in=1, num_classes=10, img_dims=(28, 28))
-
-	else:
-		raise ValueError(f'Dataset "{dataset}" is not supported.')
+	dataset_to_network = {
+		'mnist': lambda: networks.MLP(784, 256, 128, 10),
+		'cifar10': lambda: resnet18(num_classes=10),
+		'fa-mnist': lambda: LeNet5(num_channels_in=1, num_classes=10, img_dims=(28, 28))
+	}
+	assert dataset in dataset_to_network.keys()
+	net_fn = dataset_to_network[dataset]
 
 	return data, net_fn
 
 
-def load_cifar10(num_train=50000, num_val=10000):
+def load_dataset(dataset):
 	"""
-	Loads (a subset of) the CIFAR-10 dataset and returns it as a tuple.
+	Loads a dataset and returns train, val and test partitions.
 	"""
-	transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5),(0.5, 0.5, 0.5))])
-
-	train_dataset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
-	val_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
-
-	train_dataset, _ = torch.utils.data.random_split(train_dataset, lengths=[num_train, len(train_dataset)-num_train])
-	val_dataset, _ = torch.utils.data.random_split(val_dataset, lengths=[num_val, len(val_dataset)-num_val])
-
-	return train_dataset, val_dataset
-
-
-def load_fashion_mnist(num_train=50000, num_val=10000):
-	"""
-	Loads (a subset of) the Fashion-MNIST dataset and returns it as a tuple.
-	"""
+	dataset_to_class = {
+		'mnist': torchvision.datasets.MNIST,
+		'cifar10': 'CIFAR10',
+		'fa-mnist': 'FashionMNIST'
+	}
+	assert dataset in dataset_to_class.keys()
 	transform = transforms.Compose([transforms.ToTensor()])
 
-	train_dataset = torchvision.datasets.FashionMNIST(root='./data', train=True, download=True, transform=transform)
-	val_dataset = torchvision.datasets.FashionMNIST(root='./data', train=False, download=True, transform=transform)
+	train_dataset = dataset_to_class[dataset](root='./data', train=True, download=True, transform=transform)
+	train_split, val_split = torch.utils.data.random_split(train_dataset, lengths=[len(train_dataset)-10000, 10000])
+	test_split = dataset_to_class[dataset](root='./data', train=False, download=True, transform=transform)
 
-	train_dataset, _ = torch.utils.data.random_split(train_dataset, lengths=[num_train, len(train_dataset)-num_train])
-	val_dataset, _ = torch.utils.data.random_split(val_dataset, lengths=[num_val, len(val_dataset)-num_val])
-
-	return train_dataset, val_dataset
-
-
-def load_mnist(filename='data/mnist.npz', num_train=50000, num_val=10000):
-	"""
-	Loads (a subset of) the grayscale MNIST dataset and returns it as a tuple.
-	"""
-	data = np.load(filename)
-
-	x_train = data['X_train'][:num_train].astype('float32')
-	y_train = data['y_train'][:num_train].astype('int64')
-
-	x_valid = data['X_valid'][:num_val].astype('float32')
-	y_valid = data['y_valid'][:num_val].astype('int64')
-
-	train_dataset = Dataset(x_train, y_train)
-	val_dataset = Dataset(x_valid, y_valid)
-
-	return train_dataset, val_dataset
-
+	return train_split, val_split, test_split
+	
 
 def save_baseline(info_list, name):
 	"""
