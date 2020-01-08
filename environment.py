@@ -1,4 +1,5 @@
 import numpy as np
+from copy import deepcopy
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
@@ -67,7 +68,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.observation_space = spaces.Box(
                 low=-np.inf,
                 high=np.inf,
-                shape=(6,),
+                shape=(7,),
                 dtype=np.float32
             )
 
@@ -155,6 +156,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             self.optimizer.step()
 
         yhat_var = utils.AvgLoss()
+        network_predictions = []
 
         for x, y in self.val_generator:
             with torch.no_grad():
@@ -164,17 +166,28 @@ class AdaptiveLearningRateOptimizer(gym.Env):
                         y = y.cuda()
                 yhat = self.net(x)
                 val_loss += F.cross_entropy(yhat, y)
+                network_predictions.append(yhat)
                 yhat_var += yhat.var()
 
         output_layer_weights = list(self.net.parameters())[-2]
         assert output_layer_weights.size(0) == 10
 
+        network_prediction_change_var = []
+        for i, pred in enumerate(network_predictions):
+            try:
+                last_pred = self.last_network_predictions[i]
+            except:
+                last_pred = 0
+            network_prediction_change_var.append(np.array(pred - last_pred).var())
+        network_prediction_change_var = np.array(network_prediction_change_var).mean()
+
         state = np.array([
             train_loss.avg,
             val_loss.avg,
-            yhat_var.avg,
+            np.log(yhat_var.avg),
+            np.log(network_prediction_change_var),
             output_layer_weights.mean().data,
-            output_layer_weights.var().data,
+            np.log(output_layer_weights.var().data),
             self.lr
         ], dtype=np.float32)
         reward = -val_loss.avg
@@ -184,7 +197,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             'val_loss': val_loss.avg,
             'lr': self.lr
         }
-
+        self.last_network_predictions = deepcopy(network_predictions)
         self.info_list.append(info)
 
         if self.verbose and self.training_steps % (self.num_train_steps//10) == 0:
@@ -204,6 +217,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.val_generator = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=True)
         self.num_train_batches = len(list(self.train_generator))
         self.training_steps = 0
+        self.last_network_predictions = None
         self.info_list = []
         self.net = self.net_fn()
         if self.cuda:
