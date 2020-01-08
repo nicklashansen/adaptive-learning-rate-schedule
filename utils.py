@@ -76,7 +76,7 @@ def parse_args():
 	parser.add_argument(
 		'--action-range',
 		type=float,
-		default=2.0,
+		default=1.1,
 		help='factor that controls the maximum change of learning per step'
 	)
 	parser.add_argument(
@@ -106,7 +106,7 @@ def parse_args():
 	parser.add_argument(
 		'--ppo2-total-timesteps',
 		type=int,
-		default=40000,
+		default=50000,
 		help='total timesteps of the PPO2 controller'
 	)
 	parser.add_argument(

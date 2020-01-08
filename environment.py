@@ -89,20 +89,18 @@ class AdaptiveLearningRateOptimizer(gym.Env):
 
     def _clip_lr(self):
         """
-        Clips the learning rate to the [1e-6, 1] range.
+        Clips the learning rate to the [1e-5, 1e-1] range.
         """
-        self.lr = float(np.clip(self.lr, 1e-6, 1))
+        self.lr = float(np.clip(self.lr, 1e-5, 0.1))
 
 
     def _add_lr_noise(self, std=None, clip=True):
         """
         Adds Gaussian noise to the learning rate.
-        `std` denotes the standard deviation.
-        Optionally clips the learning rate.
+        `std` denotes the standard deviation. Optionally clips the learning rate.
         """
         if std is None:
-            #std = float(self.lr / 20)
-            std = 1e-6
+            std = 1e-5
 
         self.lr += float(torch.empty(1).normal_(mean=0, std=std))
         
@@ -178,7 +176,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
                 last_pred = self.last_network_predictions[i]
             except:
                 last_pred = 0
-            network_prediction_change_var.append(np.array(pred - last_pred).var())
+            network_prediction_change_var.append((pred - last_pred).var().cpu())
         network_prediction_change_var = np.array(network_prediction_change_var).mean()
 
         state = np.array([
@@ -187,7 +185,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             np.log(yhat_var.avg),
             np.log(network_prediction_change_var),
             output_layer_weights.mean().data,
-            np.log(output_layer_weights.var().data),
+            np.log(output_layer_weights.var().cpu().data),
             self.lr
         ], dtype=np.float32)
         reward = -val_loss.avg
