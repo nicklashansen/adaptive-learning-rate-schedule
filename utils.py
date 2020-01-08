@@ -88,7 +88,7 @@ def parse_args():
 	parser.add_argument(
 		'--ppo2-lr',
 		type=float,
-		default=1e-3,
+		default=5e-3,
 		help='learning rate of the PPO2 controller'
 	)
 	parser.add_argument(
@@ -189,7 +189,7 @@ def load_args_file_as_dict(name):
 		return json.load(f)
 
 
-def get_random_string(length=6):
+def get_random_string(length=4):
 	"""
 	Generates a random case-invariant string of specified length.
 	"""
