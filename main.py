@@ -29,13 +29,14 @@ if __name__ == '__main__':
     print(f'Experiment ID:', experiment_id)
 
     data, net_fn = utils.load_dataset_and_network(dataset=args.dataset)
+    train_data, val_data, _ = data[0], data[1], data[2]
 
     env = make_vec_env(
         env_id=AdaptiveLearningRateOptimizer,
         n_envs=args.num_devices,
         env_kwargs={
-            'train_dataset': data[0],
-            'val_dataset': data[1],
+            'train_dataset': train_data,
+            'val_dataset': val_data,
             'net_fn': net_fn,
             'batch_size': args.batch_size,
             'update_freq': args.update_freq,
