@@ -251,7 +251,7 @@ def load_dataset(dataset):
 	return train_split, val_split, test_split
 
 
-def make_alrs_env(args):
+def make_alrs_env(args, test=False):
 	"""
 	Make a new ALRS environment with parameters specified as command line arguments.
 	"""
@@ -270,7 +270,7 @@ def make_alrs_env(args):
             'batch_size': args.batch_size,
             'update_freq': args.update_freq,
             'num_train_steps': args.num_train_steps,
-            'initial_lr': args.initial_lr,
+            'initial_lr': args.initial_lr if test else None,
             'num_devices': args.num_devices,
             'discrete': args.discrete,
             'action_range': args.action_range,

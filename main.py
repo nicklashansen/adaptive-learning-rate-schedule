@@ -1,15 +1,8 @@
-import gym
 import numpy as np
 import torch
-import os
 import warnings
-import setproctitle
 
-from smallrl import algorithms, environments, networks, demos
-from environment import AdaptiveLearningRateOptimizer
 import utils
-from torchvision.models.resnet import resnet18
-from lenet import LeNet5
 
 with warnings.catch_warnings():  
     warnings.filterwarnings("ignore", category=FutureWarning)
@@ -20,7 +13,6 @@ with warnings.catch_warnings():
 if __name__ == '__main__':
     args = utils.parse_args()
     experiment_id = utils.get_random_string()
-    setproctitle.setproctitle('PPO2-ALRS-'+experiment_id.upper())
     print(f'Running PPO2 controller for ALRS training...\nArgs:\n{utils.args_to_str(args)}\n')
     print(f'Experiment ID:', experiment_id)
 
@@ -42,8 +34,6 @@ if __name__ == '__main__':
 
         steps = str(int(model.num_timesteps/100))+'k'
         val_loss = model.env.venv.envs[0].env.latest_end_val
-
-        print('Val loss:', val_loss)
 
         if val_loss is not None:
             summary = tf.Summary(value=[tf.Summary.Value(tag='val_loss', simple_value=val_loss)])
