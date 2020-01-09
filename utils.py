@@ -56,7 +56,7 @@ def parse_args():
 	parser.add_argument(
 		'--num-envs',
 		type=int,
-		default=1,
+		default=4,
 		help='number of environments used for training of trainee networks'
 	)
 	parser.add_argument(
@@ -68,7 +68,7 @@ def parse_args():
 	parser.add_argument(
 		'--action-range',
 		type=float,
-		default=1.1,
+		default=1.06,
 		help='factor that controls the maximum change of learning per step'
 	)
 	parser.add_argument(

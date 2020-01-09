@@ -36,7 +36,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
     Actions - Continuous (1):
         0: Scaling factor for the learning rate
     """
-    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, discrete=True, action_range=1.5, lr_noise=True, verbose=False):
+    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, discrete=True, action_range=1.06, lr_noise=True, verbose=False):
         super().__init__()
 
         class SpecDummy():
@@ -220,8 +220,9 @@ class AdaptiveLearningRateOptimizer(gym.Env):
 
         if self.initial_lr is None:
             self.ep_initial_lr = float(np.random.choice([1e-2, 1e-3, 1e-4]))
-            self.ep_initial_lr += float(torch.empty(1).normal_(mean=0, std=self.ep_initial_lr/10))
-            self.ep_initial_lr = float(np.clip(self.ep_initial_lr, 1e-5, 1e-1))
+            if self.lr_noise:
+                self.ep_initial_lr += float(torch.empty(1).normal_(mean=0, std=self.ep_initial_lr/10))
+                self.ep_initial_lr = float(np.clip(self.ep_initial_lr, 1e-5, 1e-1))
         else:
             self.ep_initial_lr = self.initial_lr
 
@@ -272,9 +273,8 @@ class AdaptiveLearningRateOptimizer(gym.Env):
 
         try:
             experiments = [
-                self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule', smooth_kernel_size=smooth_kernel_size)#,
-                #self._info_list_to_plot_metrics(utils.load_baseline('initial_lr_fa-mnist'), label='Constant (initial LR)', smooth_kernel_size=smooth_kernel_size),
-                #self._info_list_to_plot_metrics(utils.load_baseline('step_decay_fa-mnist'), label='Step decay + warmup', smooth_kernel_size=smooth_kernel_size)
+                self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule', smooth_kernel_size=smooth_kernel_size),
+                self._info_list_to_plot_metrics(utils.load_baseline('mnist'), label='Baseline', smooth_kernel_size=smooth_kernel_size)
             ]
         except:
             print('Error: failed to load experiment data. One or files might be missing.')
