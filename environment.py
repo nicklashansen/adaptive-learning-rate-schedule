@@ -36,7 +36,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
     Actions - Continuous (1):
         0: Scaling factor for the learning rate
     """
-    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, num_devices, discrete=True, action_range=1.5, lr_noise=True, verbose=False):
+    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, discrete=True, action_range=1.5, lr_noise=True, verbose=False):
         super().__init__()
 
         class SpecDummy():
@@ -52,7 +52,6 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.num_train_steps = num_train_steps
         self.initial_lr = initial_lr
         self.ep_initial_lr = initial_lr
-        self.num_devices = num_devices
         self.discrete = discrete
         self.action_range = action_range
         self.last_network_predictions = None
@@ -80,7 +79,6 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.info_list = []
         self.seed(np.random.randint(0, 2**32-1))
         self.cuda = torch.cuda.is_available()
-        assert num_devices == 1 or self.cuda
 
     
     def seed(self, seed):
@@ -141,9 +139,8 @@ class AdaptiveLearningRateOptimizer(gym.Env):
 
             x, y = next(self.train_iter)
             if self.cuda:
-                with torch.cuda.device(self.device):
-                    x = x.cuda()
-                    y = y.cuda()
+                x = x.cuda()
+                y = y.cuda()
             loss = F.cross_entropy(self.net(x), y)
             train_loss += loss
             self.training_steps += 1
@@ -158,9 +155,8 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         for x, y in self.val_generator:
             with torch.no_grad():
                 if self.cuda:
-                    with torch.cuda.device(self.device):
-                        x = x.cuda()
-                        y = y.cuda()
+                    x = x.cuda()
+                    y = y.cuda()
                 yhat = self.net(x)
                 val_loss += F.cross_entropy(yhat, y)
                 network_predictions.append(yhat)
@@ -210,8 +206,6 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         """
         Resets the environment and returns the initial state.
         """
-        if self.cuda:
-            self.device = self.random_state.randint(0, self.num_devices)
         setproctitle.setproctitle('PPO2-ALRS-v0')
         self.train_generator = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
         self.val_generator = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=True)
@@ -222,8 +216,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.net = self.net_fn()
         
         if self.cuda:
-            with torch.cuda.device(self.device):
-                self.net.cuda()
+            self.net.cuda()
 
         if self.initial_lr is None:
             self.ep_initial_lr = float(np.random.choice([1e-2, 1e-3, 1e-4]))

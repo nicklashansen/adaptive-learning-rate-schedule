@@ -54,10 +54,10 @@ def parse_args():
 		help='initial learning rate of trainee networks'
 	)
 	parser.add_argument(
-		'--num-devices',
+		'--num-envs',
 		type=int,
 		default=1,
-		help='number of devices used for training of trainee networks: 1 | 2 | 3 | 4'
+		help='number of environments used for training of trainee networks'
 	)
 	parser.add_argument(
 		'--discrete',
@@ -158,7 +158,7 @@ def parse_args():
 	args.ppo2_norm_reward = bool(args.ppo2_norm_reward)
 	args.cuda = torch.cuda.is_available()
 	assert args.dataset in {'mnist', 'cifar10', 'fa-mnist'}
-	assert args.num_devices in {1, 2, 3, 4}
+	assert args.num_envs > 0 and args.num_envs <= 32
 	
 	if args.tb_suffix == 'none':
 		args.tb_suffix = None
@@ -262,7 +262,7 @@ def make_alrs_env(args, test=False):
 
 	env = make_vec_env(
         env_id=AdaptiveLearningRateOptimizer,
-        n_envs=args.num_devices,
+        n_envs=args.num_envs,
         env_kwargs={
             'train_dataset': train_data,
             'val_dataset': val_data,
@@ -271,7 +271,6 @@ def make_alrs_env(args, test=False):
             'update_freq': args.update_freq,
             'num_train_steps': args.num_train_steps,
             'initial_lr': args.initial_lr if test else None,
-            'num_devices': args.num_devices,
             'discrete': args.discrete,
             'action_range': args.action_range,
             'verbose': False
