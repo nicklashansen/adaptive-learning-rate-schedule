@@ -26,7 +26,7 @@ def parse_args():
 	parser.add_argument(
 		'--dataset',
 		type=str,
-		default='mnist',
+		default='fa-mnist',
 		help='dataset to use: mnist | cifar10 | fa-mnist'
 	)
 	parser.add_argument(
@@ -140,7 +140,7 @@ def parse_args():
 	parser.add_argument(
 		'--test-id',
 		type=str,
-		default='xkus_steps=100k',
+		default='gzke_steps=72k_val=0.2487',
 		help='experiment id to load and search for schedules when running test.py (mutually exclusive with --test-schedule)'
 	)
 	parser.add_argument(
@@ -262,7 +262,7 @@ def make_alrs_env(args, test=False):
 
 	env = make_vec_env(
         env_id=AdaptiveLearningRateOptimizer,
-        n_envs=args.num_envs,
+        n_envs=1 if test else args.num_envs,
         env_kwargs={
             'train_dataset': train_data,
             'val_dataset': val_data,
@@ -273,6 +273,7 @@ def make_alrs_env(args, test=False):
             'initial_lr': args.initial_lr if test else None,
             'discrete': args.discrete,
             'action_range': args.action_range,
+			'render_baseline': args.dataset,
             'verbose': False
         }
     )
@@ -379,4 +380,4 @@ def values_from_list_of_dicts(lst, key):
 	"""
 	Converts a list of dictionaries to a list of values from the given key.
 	"""
-	return [d[key] for d in lst] 
+	return [d[key] if isinstance(d, dict) else d[0][key] for d in lst] 

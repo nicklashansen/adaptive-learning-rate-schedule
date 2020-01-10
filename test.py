@@ -46,7 +46,7 @@ if __name__ == '__main__':
     else:
         print(f'Running saved schedule for ALRS testing...\nArgs:\n{utils.args_to_str(args)}\n')
 
-    env = utils.make_alrs_env(args)
+    env = utils.make_alrs_env(args, test=True)
 
     best_overall_val_loss = np.inf
     displayed_rendering_error = False

@@ -36,7 +36,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
     Actions - Continuous (1):
         0: Scaling factor for the learning rate
     """
-    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, discrete=True, action_range=1.06, lr_noise=True, verbose=False):
+    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, discrete=True, action_range=1.06, lr_noise=True, render_baseline=None, verbose=False):
         super().__init__()
 
         class SpecDummy():
@@ -75,17 +75,10 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             )
 
         self.lr_noise = lr_noise
+        self.render_baseline = render_baseline
         self.verbose = verbose
         self.info_list = []
-        self.seed(np.random.randint(0, 2**32-1))
         self.cuda = torch.cuda.is_available()
-
-    
-    def seed(self, seed):
-        """
-        Sets the internal random state of the environment.
-        """
-        self.random_state = np.random.RandomState(seed)
 
 
     def _clip_lr(self):
@@ -268,17 +261,16 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         sns.set(style='whitegrid')
         colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple']
         plt.ion()
-        plt.figure(0, dpi=30)
+        plt.figure(0, dpi=40)
         plt.clf()
 
+        experiments = [self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule', smooth_kernel_size=smooth_kernel_size)]
+        
         try:
-            experiments = [
-                self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule', smooth_kernel_size=smooth_kernel_size),
-                self._info_list_to_plot_metrics(utils.load_baseline('mnist'), label='Baseline', smooth_kernel_size=smooth_kernel_size)
-            ]
+            if self.render_baseline is not None:
+                experiments.append(self._info_list_to_plot_metrics(utils.load_baseline(self.render_baseline), label='Baseline', smooth_kernel_size=smooth_kernel_size))
         except:
-            print('Error: failed to load experiment data. One or files might be missing.')
-            return
+            print('Error: failed to load baseline experiment data. Run baselines.py to generate.')
 
         plt.subplot(1, 3, 1)
         for i, (timeline, train_losses, val_losses, learning_rates, smoothed_train_losses, smoothed_val_losses, smoothed_learning_rates, label) in enumerate(experiments):
