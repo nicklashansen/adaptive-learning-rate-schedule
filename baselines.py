@@ -35,6 +35,9 @@ if __name__ == '__main__':
 
                 args.initial_lr = initial_lr
                 env = utils.make_alrs_env(args, test=True)
+
+                # TODO: Allow baselines to decrease learning rate arbitrarily
+
                 env.reset()
                 done = False
                 global_step = 0

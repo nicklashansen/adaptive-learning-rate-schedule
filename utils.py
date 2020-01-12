@@ -30,6 +30,12 @@ def parse_args():
 		help='dataset to use: mnist | cifar10 | fa-mnist'
 	)
 	parser.add_argument(
+		'--architecture',
+		type=str,
+		default='cnn',
+		help='architeture to use: mlp | cnn | resnet'
+	)
+	parser.add_argument(
 		'--batch-size',
 		type=int,
 		default=1000,
@@ -68,7 +74,7 @@ def parse_args():
 	parser.add_argument(
 		'--action-range',
 		type=float,
-		default=1.06,
+		default=1.05,
 		help='factor that controls the maximum change of learning per step'
 	)
 	parser.add_argument(
@@ -92,7 +98,7 @@ def parse_args():
 	parser.add_argument(
 		'--ppo2-lr',
 		type=float,
-		default=1e-2,
+		default=3e-3,
 		help='learning rate of the PPO2 controller'
 	)
 	parser.add_argument(
@@ -189,7 +195,22 @@ def load_args_file_as_dict(name):
 	"""
 	Loads command line arguments stored as a JSON file with the specified name.
 	"""
-	with open('data/' + name + '.json', 'r') as f:
+	return load_file_as_dict(name)
+
+
+def dict_to_file(d, name, path='data/'):
+	"""
+	Saves a dictionary to a JSON file with the specified name and path.
+	"""
+	with open(path + name + '.json', 'w', encoding='utf-8') as f:
+		json.dump(d, f, ensure_ascii=False, indent=4)
+
+
+def load_file_as_dict(name, path='data/'):
+	"""
+	Loads a dictionary stored as a JSON file with the specified name and path.
+	"""
+	with open(path + name + '.json', 'r') as f:
 		return json.load(f)
 
 
@@ -215,19 +236,19 @@ class Dataset(torch.utils.data.Dataset):
 		return self.X[idx], self.y[idx]
 
 
-def load_dataset_and_network(dataset,):
+def load_dataset_and_network(dataset, architecture):
 	"""
-	Loads a specified dataset and its associated neural network architecture.
+	Loads a specified dataset and neural network architecture.
 	"""
 	data = load_dataset(dataset)
 
-	dataset_to_network = {
-		'mnist': lambda: networks.MLP(784, 256, 128, 10),
-		'cifar10': lambda: resnet18(num_classes=10),
-		'fa-mnist': lambda: LeNet5(num_channels_in=1, num_classes=10, img_dims=(28, 28))
+	architecture_to_network = {
+		'mlp': lambda: networks.MLP(784, 256, 128, 10),
+		'cnn': lambda: LeNet5(num_channels_in=1, num_classes=10, img_dims=(28, 28)),
+		'resnet': lambda: resnet18(num_classes=10)
 	}
-	assert dataset in dataset_to_network.keys()
-	net_fn = dataset_to_network[dataset]
+	assert architecture in architecture_to_network.keys()
+	net_fn = architecture_to_network[architecture]
 
 	return data, net_fn
 
@@ -257,24 +278,18 @@ def make_alrs_env(args, test=False):
 	"""
 	from environment import AdaptiveLearningRateOptimizer
 
-	data, net_fn = load_dataset_and_network(dataset=args.dataset)
-	train_data, val_data, _ = data[0], data[1], data[2]
-
 	env = make_vec_env(
         env_id=AdaptiveLearningRateOptimizer,
         n_envs=1 if test else args.num_envs,
         env_kwargs={
-            'train_dataset': train_data,
-            'val_dataset': val_data,
-            'net_fn': net_fn,
+			'dataset': args.dataset,
+			'architecture': args.architecture,
             'batch_size': args.batch_size,
             'update_freq': args.update_freq,
             'num_train_steps': args.num_train_steps,
             'initial_lr': args.initial_lr if test else None,
             'discrete': args.discrete,
-            'action_range': args.action_range,
-			'render_baseline': args.dataset,
-            'verbose': False
+            'action_range': args.action_range
         }
     )
 	env = VecNormalize(
@@ -374,6 +389,16 @@ class AvgLoss():
 
 	def __len__(self):
 		return len(self.losses)
+
+
+def accuracy(yhat, y):
+	"""
+	Computes the accuracy of predictions `yhat` versus targets `y`.
+	"""
+	if len(yhat.shape) == 2:
+		yhat = yhat.argmax(dim=-1)
+
+	return torch.eq(yhat, y).sum().type(dtype=torch.float32)/y.size(0)
 
 
 def values_from_list_of_dicts(lst, key):

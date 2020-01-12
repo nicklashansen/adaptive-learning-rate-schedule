@@ -1,26 +1,13 @@
-import gym
 import numpy as np
-import torch
-import os
 import warnings
 import setproctitle
 import pickle as pkl
-from torchvision.models.resnet import resnet18
-from lenet import LeNet5
-
-from smallrl import algorithms, environments, networks, demos
-from environment import AdaptiveLearningRateOptimizer
 import utils
-from lenet import LeNet5
 
 with warnings.catch_warnings():  
     warnings.filterwarnings("ignore", category=FutureWarning)
     import tensorflow as tf
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-    from stable_baselines.common.policies import MlpPolicy, LstmPolicy, MlpLstmPolicy
-    from stable_baselines.common import make_vec_env
-    from stable_baselines.common.vec_env import VecNormalize
-    from stable_baselines import PPO2
 
 
 if __name__ == '__main__':

@@ -36,16 +36,19 @@ class AdaptiveLearningRateOptimizer(gym.Env):
     Actions - Continuous (1):
         0: Scaling factor for the learning rate
     """
-    def __init__(self, train_dataset, val_dataset, net_fn, batch_size, update_freq, num_train_steps, initial_lr, discrete=True, action_range=1.06, lr_noise=True, render_baseline=None, verbose=False):
+    def __init__(self, dataset, architecture, batch_size, update_freq, num_train_steps, initial_lr, discrete=True, action_range=1.06, lr_noise=True):
         super().__init__()
+        data, net_fn = utils.load_dataset_and_network(dataset, architecture)
 
         class SpecDummy():
             def __init__(self, id):
                 self.id = id
          
         self.spec = SpecDummy(id='AdaptiveLearningRateContinuous-v0' if not discrete else 'AdaptiveLearningRate-v0')
-        self.train_dataset = train_dataset
-        self.val_dataset = val_dataset
+        self.dataset = dataset
+        self.train_dataset = data[0]
+        self.val_dataset = data[1]
+        self.test_dataset = data[2]
         self.net_fn = net_fn
         self.batch_size = batch_size
         self.update_freq = update_freq
@@ -75,8 +78,6 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             )
 
         self.lr_noise = lr_noise
-        self.render_baseline = render_baseline
-        self.verbose = verbose
         self.info_list = []
         self.cuda = torch.cuda.is_available()
 
@@ -116,6 +117,25 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             if self.lr_noise:
                 self._add_lr_noise(clip=clip)
             self.schedule.step()
+    
+
+    def test(self):
+        """
+        Computes loss and accuracy on a test set for the currently stored network.
+        """
+        test_generator = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
+        test_loss, test_acc = utils.AvgLoss(), utils.AvgLoss()
+
+        for x, y in test_generator:
+            with torch.no_grad():
+                if self.cuda:
+                    x = x.cuda()
+                    y = y.cuda()
+                yhat = self.net(x)
+                test_loss += F.cross_entropy(yhat, y)
+                test_acc += utils.accuracy(yhat, y)
+
+        return test_loss.avg, test_acc.avg
 
 
     def step(self, action):
@@ -188,9 +208,6 @@ class AdaptiveLearningRateOptimizer(gym.Env):
 
         if done:
             self.latest_end_val = float(val_loss.avg)
-
-        if self.verbose and self.training_steps % (self.num_train_steps//10) == 0:
-            print(f'Step {self.training_steps}/{self.num_train_steps}, train loss: {train_loss}, val_loss: {val_loss}, lr: {self.lr}, reward: {reward}')
 
         return state, reward, done, info
 
@@ -267,8 +284,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         experiments = [self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule', smooth_kernel_size=smooth_kernel_size)]
         
         try:
-            if self.render_baseline is not None:
-                experiments.append(self._info_list_to_plot_metrics(utils.load_baseline(self.render_baseline), label='Baseline', smooth_kernel_size=smooth_kernel_size))
+            experiments.append(self._info_list_to_plot_metrics(utils.load_baseline(self.dataset), label='Baseline', smooth_kernel_size=smooth_kernel_size))
         except:
             print('Error: failed to load baseline experiment data. Run baselines.py to generate.')
 
