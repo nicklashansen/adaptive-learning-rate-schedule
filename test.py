@@ -8,6 +8,7 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
     import tensorflow as tf
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+    from stable_baselines import PPO2
 
 
 if __name__ == '__main__':

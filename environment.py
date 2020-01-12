@@ -36,7 +36,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
     Actions - Continuous (1):
         0: Scaling factor for the learning rate
     """
-    def __init__(self, dataset, architecture, batch_size, update_freq, num_train_steps, initial_lr, discrete=True, action_range=1.06, lr_noise=True):
+    def __init__(self, dataset, architecture, batch_size, update_freq, num_train_steps, initial_lr, discrete=True, action_range=1.05, lr_noise=True):
         super().__init__()
         data, net_fn = utils.load_dataset_and_network(dataset, architecture)
 
@@ -282,11 +282,14 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         plt.clf()
 
         experiments = [self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule', smooth_kernel_size=smooth_kernel_size)]
+        displayed_load_error = False
         
         try:
             experiments.append(self._info_list_to_plot_metrics(utils.load_baseline(self.dataset), label='Baseline', smooth_kernel_size=smooth_kernel_size))
         except:
-            print('Error: failed to load baseline experiment data. Run baselines.py to generate.')
+            if not displayed_load_error:
+                print('Error: failed to load baseline experiment data. Run baselines.py to generate.')
+                displayed_load_error = True
 
         plt.subplot(1, 3, 1)
         for i, (timeline, train_losses, val_losses, learning_rates, smoothed_train_losses, smoothed_val_losses, smoothed_learning_rates, label) in enumerate(experiments):

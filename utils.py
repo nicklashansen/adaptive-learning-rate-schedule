@@ -14,8 +14,8 @@ from stable_baselines.common import make_vec_env, schedules, policies
 from stable_baselines import PPO2
 
 from smallrl import networks
-from torchvision.models.resnet import resnet18
 from lenet import LeNet5
+from resnet import resnet18
 
 
 def parse_args():
@@ -244,8 +244,8 @@ def load_dataset_and_network(dataset, architecture):
 
 	architecture_to_network = {
 		'mlp': lambda: networks.MLP(784, 256, 128, 10),
-		'cnn': lambda: LeNet5(num_channels_in=1, num_classes=10, img_dims=(28, 28)),
-		'resnet': lambda: resnet18(num_classes=10)
+		'cnn': lambda: LeNet5(num_channels_in=3 if dataset == 'cifar10' else 1, num_classes=10, img_dims=(32, 32) if dataset == 'cifar10' else (28, 28)),
+		'resnet': lambda: resnet18(num_channels_in=3 if dataset == 'cifar10' else 1, num_classes=10)
 	}
 	assert architecture in architecture_to_network.keys()
 	net_fn = architecture_to_network[architecture]
@@ -272,7 +272,7 @@ def load_dataset(dataset):
 	return train_split, val_split, test_split
 
 
-def make_alrs_env(args, test=False):
+def make_alrs_env(args, test=False, baseline=False):
 	"""
 	Make a new ALRS environment with parameters specified as command line arguments.
 	"""
@@ -287,9 +287,9 @@ def make_alrs_env(args, test=False):
             'batch_size': args.batch_size,
             'update_freq': args.update_freq,
             'num_train_steps': args.num_train_steps,
-            'initial_lr': args.initial_lr if test else None,
+            'initial_lr': args.initial_lr if test or baseline else None,
             'discrete': args.discrete,
-            'action_range': args.action_range
+            'action_range': np.inf if baseline else args.action_range
         }
     )
 	env = VecNormalize(
@@ -308,11 +308,13 @@ def make_ppo2_controller(env, args):
 	"""
 	Make a new PPO2 controller for the given environment using specified command line arguments.
 	"""
+	"""
 	lr_schedule = schedules.LinearSchedule(
         schedule_timesteps=args.ppo2_total_timesteps,
         initial_p=args.ppo2_lr,
-        final_p=args.ppo2_lr*0.05
+        final_p=args.ppo2_lr*0.1
     )
+	"""
 
 	model = PPO2(
         policy=policies.MlpPolicy,
@@ -320,7 +322,8 @@ def make_ppo2_controller(env, args):
         gamma=args.ppo2_gamma,
         n_steps=args.ppo2_update_freq,
         ent_coef=args.ppo2_ent_coef,
-        learning_rate=lr_schedule.value,
+        #learning_rate=lr_schedule.value,
+		learning_rate=args.ppo2_lr,
         nminibatches=args.ppo2_nminibatches,
         noptepochs=args.ppo2_noptepochs,
         cliprange=args.ppo2_cliprange,

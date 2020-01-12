@@ -8,14 +8,11 @@ if __name__ == '__main__':
     args = utils.parse_args()
     print(f'Running baseline for ALRS testing...\nArgs:\n{utils.args_to_str(args)}\n')
 
-    def learning_rate_with_decay(initial_lr, global_step, discount_step, discount_factor):
+    def learning_rate_with_decay(lr, global_step, discount_step, discount_factor):
         """
         Near-optimal step decay learning rate schedule as proposed by https://arxiv.org/abs/1904.12838.
         """
-        num_times_decayed = global_step // discount_step
-        decayed_lr = initial_lr * (discount_factor ** num_times_decayed)
-
-        return decayed_lr
+        return lr * discount_factor if global_step % discount_step == 0 and global_step > 0 else lr
     
     displayed_rendering_error = False
 
@@ -34,9 +31,7 @@ if __name__ == '__main__':
                 print(f'Initial LR: {initial_lr}\nDiscount step: {discount_step}\nDiscount factor: {discount_factor}')
 
                 args.initial_lr = initial_lr
-                env = utils.make_alrs_env(args, test=True)
-
-                # TODO: Allow baselines to decrease learning rate arbitrarily
+                env = utils.make_alrs_env(args, test=True, baseline=True)
 
                 env.reset()
                 done = False
@@ -45,7 +40,7 @@ if __name__ == '__main__':
                 info_list = []
 
                 while not done:
-                    decayed_lr = learning_rate_with_decay(initial_lr, global_step, discount_step, discount_factor)
+                    decayed_lr = learning_rate_with_decay(current_lr, global_step, discount_step, discount_factor)
                     action = np.array(decayed_lr / current_lr).reshape(1,)
 
                     _, _, done, info = env.step(action)
@@ -65,13 +60,18 @@ if __name__ == '__main__':
 
                 if val_loss < best_val_loss:
                     best_config = {
+                        'dataset': args.dataset,
+                        'architecture': args.architecture,
                         'initial_lr': initial_lr,
                         'discount_step': discount_step,
                         'discount_factor': discount_factor,
-                        'val_loss': val_loss
+                        'val_loss': val_loss,
+                        'log_val_loss': np.log(val_loss)
                     }
                     best_info_list = info_list
                     best_val_loss = val_loss
 
     print(f'Found best configuration:\n{best_config}')
-    utils.save_baseline(best_info_list, args.dataset)
+    filename = args.dataset+'_'+args.architecture
+    utils.dict_to_file(best_config, filename, path='data/baselines/')
+    utils.save_baseline(best_info_list, filename)
