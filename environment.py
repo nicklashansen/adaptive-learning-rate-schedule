@@ -113,7 +113,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
             elif action == 1:
                 self.lr /= self.action_range
         else:
-            self.lr *= action
+            self.lr *= float(action)
         
         if self.training_steps != 0:
             if self.lr_noise:
@@ -232,11 +232,12 @@ class AdaptiveLearningRateOptimizer(gym.Env):
 
         if self.initial_lr is None:
             self.ep_initial_lr = float(np.random.choice([1e-2, 1e-3, 1e-4]))
-            if self.lr_noise:
-                self.ep_initial_lr += float(torch.empty(1).normal_(mean=0, std=self.ep_initial_lr/10))
-                self.ep_initial_lr = float(np.clip(self.ep_initial_lr, 1e-5, 1e-1))
         else:
             self.ep_initial_lr = self.initial_lr
+
+        if self.lr_noise:
+            self.ep_initial_lr += float(torch.empty(1).normal_(mean=0, std=self.ep_initial_lr/10))
+            self.ep_initial_lr = float(np.clip(self.ep_initial_lr, 1e-5, 1e-1))
 
         self.lr = self.ep_initial_lr
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=self.ep_initial_lr)   
@@ -283,7 +284,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         plt.figure(0, dpi=40)
         plt.clf()
 
-        experiments = [self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule', smooth_kernel_size=smooth_kernel_size)]
+        experiments = [self._info_list_to_plot_metrics(self.info_list, label='Auto-learned', smooth_kernel_size=smooth_kernel_size)]
         
         try:
             experiments.append(self._info_list_to_plot_metrics(utils.load_baseline(self.dataset+'_'+self.architecture), label='Baseline', smooth_kernel_size=smooth_kernel_size))

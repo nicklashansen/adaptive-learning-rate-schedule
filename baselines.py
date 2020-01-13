@@ -7,12 +7,6 @@ import utils
 if __name__ == '__main__':
     args = utils.parse_args()
     print(f'Running baseline for ALRS testing...\nArgs:\n{utils.args_to_str(args)}\n')
-
-    def learning_rate_with_decay(lr, global_step, discount_step, discount_factor):
-        """
-        Near-optimal step decay learning rate schedule as proposed by https://arxiv.org/abs/1904.12838.
-        """
-        return lr * discount_factor if global_step % discount_step == 0 and global_step > 0 else lr
     
     displayed_rendering_error = False
 
@@ -40,12 +34,11 @@ if __name__ == '__main__':
                 info_list = []
 
                 while not done:
-                    decayed_lr = learning_rate_with_decay(current_lr, global_step, discount_step, discount_factor)
-                    action = np.array(decayed_lr / current_lr).reshape(1,)
+                    action, new_lr = utils.step_decay_action(current_lr, global_step, discount_step, discount_factor)
 
                     _, _, done, info = env.step(action)
                     global_step += args.update_freq
-                    current_lr = decayed_lr
+                    current_lr = new_lr
                     info_list.append(info)
 
                     try:

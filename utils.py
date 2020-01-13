@@ -146,7 +146,7 @@ def parse_args():
 	parser.add_argument(
 		'--test-id',
 		type=str,
-		default='gzke_steps=72k_val=0.2487',
+		default='lxvc_steps=20k_val=0.2596',
 		help='experiment id to load and search for schedules when running test.py (mutually exclusive with --test-schedule)'
 	)
 	parser.add_argument(
@@ -359,6 +359,21 @@ def load_baseline(name):
 			return pkl.load(f)
 	except:
 		return None
+
+
+def learning_rate_with_decay(lr, global_step, discount_step, discount_factor):
+	"""
+	Near-optimal step decay learning rate schedule as proposed by https://arxiv.org/abs/1904.12838.
+	"""
+	return lr * discount_factor if global_step % discount_step == 0 and global_step > 0 else lr
+
+
+def step_decay_action(lr, global_step, discount_step, discount_factor):
+	"""
+	Wrapper method for the step decay baseline schedule.
+	"""
+	decayed_lr = learning_rate_with_decay(lr, global_step, discount_step, discount_factor)
+	return np.array(decayed_lr / lr).reshape(1,), decayed_lr
 
 
 class AvgLoss():

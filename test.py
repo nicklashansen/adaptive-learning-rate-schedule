@@ -30,7 +30,6 @@ if __name__ == '__main__':
         experiment_dataset = experiment_args['dataset']
         if args.dataset != experiment_dataset:
             print(f'Warning: agent is tested on {args.dataset} but was trained on {experiment_dataset}.')
-    
     else:
         print(f'Running saved schedule for ALRS testing...\nArgs:\n{utils.args_to_str(args)}\n')
 
