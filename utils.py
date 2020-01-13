@@ -287,9 +287,10 @@ def make_alrs_env(args, test=False, baseline=False):
             'batch_size': args.batch_size,
             'update_freq': args.update_freq,
             'num_train_steps': args.num_train_steps,
-            'initial_lr': args.initial_lr if test or baseline else None,
+            'initial_lr': args.initial_lr,
             'discrete': args.discrete,
-            'action_range': np.inf if baseline else args.action_range
+            'action_range': np.inf if baseline else args.action_range,
+			'lr_noise':  not (test or baseline)
         }
     )
 	env = VecNormalize(

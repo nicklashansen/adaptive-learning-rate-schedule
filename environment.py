@@ -46,6 +46,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
          
         self.spec = SpecDummy(id='AdaptiveLearningRateContinuous-v0' if not discrete else 'AdaptiveLearningRate-v0')
         self.dataset = dataset
+        self.architecture = architecture
         self.train_dataset = data[0]
         self.val_dataset = data[1]
         self.test_dataset = data[2]
@@ -80,6 +81,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.lr_noise = lr_noise
         self.info_list = []
         self.cuda = torch.cuda.is_available()
+        self.displayed_load_error = False
 
 
     def _clip_lr(self):
@@ -282,14 +284,13 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         plt.clf()
 
         experiments = [self._info_list_to_plot_metrics(self.info_list, label='Adaptive schedule', smooth_kernel_size=smooth_kernel_size)]
-        displayed_load_error = False
         
         try:
-            experiments.append(self._info_list_to_plot_metrics(utils.load_baseline(self.dataset), label='Baseline', smooth_kernel_size=smooth_kernel_size))
+            experiments.append(self._info_list_to_plot_metrics(utils.load_baseline(self.dataset+'_'+self.architecture), label='Baseline', smooth_kernel_size=smooth_kernel_size))
         except:
-            if not displayed_load_error:
+            if not self.displayed_load_error:
                 print('Error: failed to load baseline experiment data. Run baselines.py to generate.')
-                displayed_load_error = True
+                self.displayed_load_error = True
 
         plt.subplot(1, 3, 1)
         for i, (timeline, train_losses, val_losses, learning_rates, smoothed_train_losses, smoothed_val_losses, smoothed_learning_rates, label) in enumerate(experiments):

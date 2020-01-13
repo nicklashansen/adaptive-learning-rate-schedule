@@ -1,0 +1,8 @@
+{
+    "num_runs": 10,
+    "dataset": "mnist",
+    "architecture": "mlp",
+    "avg_loss": 1.6257612311840055,
+    "avg_log_loss": 0.4859761560526609,
+    "avg_acc": 0.7076000362634659
+}

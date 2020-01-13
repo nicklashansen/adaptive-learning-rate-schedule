@@ -47,4 +47,4 @@ if __name__ == '__main__':
         'avg_acc': test_acc.avg
     }
     print(f'Results:\n{results}')
-    utils.dict_to_file(results, 'test_baseline'+args.dataset+'_'+args.architecture, path='results/')
+    utils.dict_to_file(results, 'test_baseline_'+args.dataset+'_'+args.architecture, path='results/')

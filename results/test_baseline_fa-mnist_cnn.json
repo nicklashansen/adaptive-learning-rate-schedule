@@ -1,0 +1,8 @@
+{
+    "num_runs": 10,
+    "dataset": "fa-mnist",
+    "architecture": "cnn",
+    "avg_loss": 2.1867356228828427,
+    "avg_log_loss": 0.7824098486456335,
+    "avg_acc": 0.3460300162434578
+}
