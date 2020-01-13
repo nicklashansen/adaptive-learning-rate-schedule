@@ -65,6 +65,7 @@ Coming soon.
 Since the production of above figures, I have also updated the baseline to reflect that of the paper. I use a exponentially decaying step function LR schedule and test all combinations of initial learning rates in (1e-1, 1e-2, 1e-3, 1e-4), discount steps in (10, 20, 50, 100) and discount factors in (0.99, 0.9, 0.88). After choosing the best baseline schedule, the mean validation loss at end of training using the best combination of hyper-parameters is reported in the table below. Reporting mean and std of test loss and test accuracy over a number of runs like in Table 1 of the paper is in the pipepline.
 
 | Dataset | Architecture | Log validation loss |
+| ------------- | ------------- | ------------- |
 | MNIST | MLP | -2.6254 |
 | MNIST | CNN | -3.0583 |
 | Fa. MNIST | CNN | -1.3832 |
