@@ -14,8 +14,8 @@ if __name__ == '__main__':
     args = utils.parse_args()
     setproctitle.setproctitle('PPO2-ALRS')
 
-    env = utils.make_alrs_env(args, test=True)
-    baseline = utils.values_from_list_of_dicts(utils.load_baseline(args.dataset), 'lr')
+    env = utils.make_alrs_env(args, test=True, baseline=True)
+    baseline = utils.values_from_list_of_dicts(utils.load_baseline(args.dataset+'_'+args.architecture), 'lr')
 
     test_loss, test_acc = utils.AvgLoss(), utils.AvgLoss()
     num_runs = 10
@@ -28,8 +28,6 @@ if __name__ == '__main__':
         alrs = env.venv.envs[0].env
 
         while not done:
-            
-            # TODO: Fix baseline lr rates, they are inaccurate (numerically unstable?)
 
             action = np.array(baseline[step] / alrs.lr).reshape(1,)
             _, _, done, _ = env.step(action)
@@ -43,8 +41,10 @@ if __name__ == '__main__':
     results = {
         'num_runs': num_runs,
         'dataset': args.dataset,
+        'architecture': args.architecture,
         'avg_loss': test_loss.avg,
+        'avg_log_loss': np.log(test_loss.avg),
         'avg_acc': test_acc.avg
     }
     print(f'Results:\n{results}')
-    utils.dict_to_file(results, 'test_'+args.dataset, path='results/')
+    utils.dict_to_file(results, 'test_baseline'+args.dataset+'_'+args.architecture, path='results/')
