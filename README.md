@@ -5,7 +5,7 @@ PyTorch implementation of the "Learning an Adaptive Learning Rate Schedule" pape
 ## Experimental details
 
 A controller is optimized by [PPO](https://arxiv.org/abs/1707.06347) to generate adaptive learning rate schedules. Both the actor and the critic are MLPs with 2 hidden layers of size 32.
-Three distinct child network architectures are used: 1) an MLP with 3 hidden layers, 2) [LeNet-5](http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf) and 3) [ResNet-18](https://arxiv.org/abs/1512.03385). Learning rate schedules are evaluated on three different datasets: 1) [MNIST](http://yann.lecun.com/exdb/mnist/), 2) [Fashion-MNIST](https://arxiv.org/abs/1708.07747) and 3) [CIFAR10](https://www.cs.toronto.edu/~kriz/cifar.html).
+Three distinct child network architectures are used: 1) an MLP with 3 hidden layers, 2) [LeNet-5](http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf) and 3) [ResNet-18](https://arxiv.org/abs/1512.03385). Learning rate schedules are evaluated on three different datasets: 1) [MNIST](http://yann.lecun.com/exdb/mnist/), 2) [Fashion-MNIST](https://arxiv.org/abs/1708.07747) and 3) [CIFAR10](https://www.cs.toronto.edu/~kriz/cifar.html). Original paper experiments with combinations of Fashion-MNIST, CIFAR10, LeNet-5 and ResNet-18 only.
 
 In each of the three settings, child networks are optimized using [Adam](https://arxiv.org/abs/1412.6980) with an initial learning rate in (1e-2, 1e-3, 1e-4) and are trained for 1000 steps on the full training set (40-50k samples) with a batch size of 1000, i.e. 20-25 epochs. Learning rate schedules are evaluated based on validation loss over the course of training. Test loss and test accuracies are in the pipeline.
 
