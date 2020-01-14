@@ -214,7 +214,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         return state, reward, done, info
 
 
-    def reset(self):
+    def reset(self, take_first_step=True):
         """
         Resets the environment and returns the initial state.
         """
@@ -244,9 +244,31 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         self.lambda_func = lambda _: self.lr/self.ep_initial_lr
         self.schedule = torch.optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=self.lambda_func)
 
-        state, _, _, _ = self.step(action=2 if self.discrete else 1)
+        if take_first_step:
+            state, _, _, _ = self.step(action=2 if self.discrete else 1)
+            
+            return state
 
-        return state
+    
+    def reset_and_sync(self, baseline_env):
+        """
+        Resets the environment and syncronizes a target baseline environment.
+        Syncronized environments start off with the same child network initialization.
+        Returns the observed state of this environment as well as the syncronized baseline environment.
+        """
+        baseline = baseline_env.alrs
+
+        self.reset(take_first_step=False)
+        baseline.reset(take_first_step=False)
+
+        baseline.net = deepcopy(self.net)
+        baseline.optimizer = torch.optim.Adam(baseline.net.parameters(), lr=baseline.ep_initial_lr)
+        baseline.schedule = torch.optim.lr_scheduler.LambdaLR(baseline.optimizer, lr_lambda=baseline.lambda_func)
+
+        state, _, _, _ = self.step(action=2 if self.discrete else 1)
+        baseline.step(action=2 if baseline.discrete else 1)
+
+        return state, baseline_env
 
     
     def _info_list_to_plot_metrics(self, info_list, label, smooth_kernel_size=None):
@@ -273,7 +295,7 @@ class AdaptiveLearningRateOptimizer(gym.Env):
         return timeline, train_losses, val_losses, learning_rates, smoothed_train_losses, smoothed_val_losses, smoothed_learning_rates, label
 
     
-    def render(self, mode='human', smooth_kernel_size=5):
+    def render(self, mode='human', smooth_kernel_size=5, baseline=None):
         """
         Renders current state as a figure.
         """
@@ -286,12 +308,15 @@ class AdaptiveLearningRateOptimizer(gym.Env):
 
         experiments = [self._info_list_to_plot_metrics(self.info_list, label='Auto-learned', smooth_kernel_size=smooth_kernel_size)]
         
-        try:
-            experiments.append(self._info_list_to_plot_metrics(utils.load_baseline(self.dataset+'_'+self.architecture), label='Baseline', smooth_kernel_size=smooth_kernel_size))
-        except:
-            if not self.displayed_load_error:
-                print('Error: failed to load baseline experiment data. Run baselines.py to generate.')
-                self.displayed_load_error = True
+        if baseline is None:
+            try:
+                experiments.append(self._info_list_to_plot_metrics(utils.load_baseline(self.dataset+'_'+self.architecture), label='Baseline', smooth_kernel_size=smooth_kernel_size))
+            except:
+                if not self.displayed_load_error:
+                    print('Error: failed to load baseline experiment data. Run baselines.py to generate.')
+                    self.displayed_load_error = True
+        else:
+            experiments.append(self._info_list_to_plot_metrics(baseline.alrs.info_list, label='Baseline', smooth_kernel_size=smooth_kernel_size))
 
         plt.subplot(1, 3, 1)
         for i, (timeline, train_losses, val_losses, learning_rates, smoothed_train_losses, smoothed_val_losses, smoothed_learning_rates, label) in enumerate(experiments):

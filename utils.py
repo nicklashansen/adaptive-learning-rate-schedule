@@ -301,6 +301,7 @@ def make_alrs_env(args, test=False, baseline=False):
         clip_reward=args.ppo2_cliprange if args.ppo2_cliprange > 0 else 10,
         gamma=args.ppo2_gamma
     )
+	env.alrs = env.venv.envs[0].env
 
 	return env
 

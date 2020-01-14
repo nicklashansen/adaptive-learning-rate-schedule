@@ -1,4 +1,6 @@
 import numpy as np
+import torch
+from copy import deepcopy
 import warnings
 import setproctitle
 import pickle as pkl
@@ -35,57 +37,60 @@ if __name__ == '__main__':
 
     env = utils.make_alrs_env(args, test=True)
 
+    baseline_args = deepcopy(args)
+    baseline_config = utils.load_file_as_dict(args.dataset+'_'+args.architecture, path='data/baselines/')
+    baseline_args.initial_lr = baseline_config['initial_lr']
+    baseline_env = utils.make_alrs_env(baseline_args, test=True, baseline=True)
+
     best_overall_val_loss = np.inf
     displayed_rendering_error = False
 
-    def run_test(env):
+    def run_test(env, baseline_env):
         global best_overall_val_loss, displayed_rendering_error
 
-        if test_id is not None:
+        try:
             model = PPO2.load('data/'+test_id)
             model.set_env(env)
-            actions = []
-        else:
-            with open('results/'+test_schedule+'.pkl', 'rb') as f:
-                actions = pkl.load(f)
+        except:
+            raise ValueError('Error: failed to load PPO2 model from path "data/'+test_id+'". Missing?')
 
-        state = env.reset()
+        env.reset()
+        baseline_env.reset()
+        state, baseline_env = env.alrs.reset_and_sync(baseline_env)
+
         done = False
         best_val_loss = np.inf
+        global_step = 0
+        lr = baseline_env.alrs.lr
 
         while not done:
-            if test_id is not None:
-                action, _ = model.predict(state)
-                state, _, done, _ = env.step(action)
-                actions.append(action)
-            else:
-                action = actions.pop(0) if len(actions) > 0 else 2
-                env.step(action)
-            
+
+            # Take step with auto-learned schedule
+            action, _ = model.predict(state)
+            state, _, done, _ = env.step(action)
+
+            # Take step with baseline schedule
+            action, lr = utils.step_decay_action(lr, global_step, baseline_config['discount_step'], baseline_config['discount_factor'])
+            baseline_env.step(action)
+            global_step += args.update_freq
+
+            # Save best validation loss of auto-learned schedule
             best_val_loss = min(env.envs[0].info_list[-1]['val_loss'], best_val_loss)
 
             try:
-                env.render()
+                env.alrs.render(baseline=baseline_env)
             except:
                 if not displayed_rendering_error:
                     displayed_rendering_error = True
                     print('Warning: device does not support rendering.')
 
         best_overall_val_loss = min(best_val_loss, best_overall_val_loss)
-
-        if test_id is not None and best_overall_val_loss == best_val_loss:
-            with open('results/experiment.pkl', 'wb') as f:
-                pkl.dump(actions, f, protocol=pkl.HIGHEST_PROTOCOL)
-
         print(f'Achieved a validation loss of {best_val_loss} (best: {best_overall_val_loss})')
 
         return best_val_loss
 
-    if test_id is not None:
-        while True:
-            run_test(env)
-    else:
-        run_test(env)
+    while True:
+        run_test(env, baseline_env)
 
     print('Testing terminated successfully!')
     
