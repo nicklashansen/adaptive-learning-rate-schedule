@@ -32,7 +32,7 @@ if __name__ == '__main__':
         minor_save_interval = 2000  if args.dataset == 'mnist' else 1000
         major_save_interval = 10000 if args.dataset == 'mnist' else 5000
 
-        steps = str(int(model.num_timesteps/100))+'k'
+        steps = str(int(model.num_timesteps/1000))+'k'
         val_loss = model.env.venv.envs[0].env.latest_end_val
 
         def write_value(tag, value):

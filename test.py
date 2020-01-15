@@ -42,11 +42,10 @@ if __name__ == '__main__':
     baseline_args.initial_lr = baseline_config['initial_lr']
     baseline_env = utils.make_alrs_env(baseline_args, test=True, baseline=True)
 
-    best_overall_val_loss = np.inf
     displayed_rendering_error = False
 
     def run_test(env, baseline_env):
-        global best_overall_val_loss, displayed_rendering_error
+        global displayed_rendering_error
 
         try:
             model = PPO2.load('data/'+test_id)
@@ -60,6 +59,7 @@ if __name__ == '__main__':
 
         done = False
         best_val_loss = np.inf
+        best_val_loss_baseline = np.inf
         global_step = 0
         lr = baseline_env.alrs.lr
 
@@ -74,8 +74,9 @@ if __name__ == '__main__':
             baseline_env.step(action)
             global_step += args.update_freq
 
-            # Save best validation loss of auto-learned schedule
+            # Save best validation loss
             best_val_loss = min(env.envs[0].info_list[-1]['val_loss'], best_val_loss)
+            best_val_loss_baseline = min(baseline_env.envs[0].info_list[-1]['val_loss'], best_val_loss_baseline)
 
             try:
                 env.alrs.render(baseline=baseline_env)
@@ -84,8 +85,10 @@ if __name__ == '__main__':
                     displayed_rendering_error = True
                     print('Warning: device does not support rendering.')
 
-        best_overall_val_loss = min(best_val_loss, best_overall_val_loss)
-        print(f'Achieved a validation loss of {best_val_loss} (best: {best_overall_val_loss})')
+        print(f'Val loss: {best_val_loss}\nVal loss (baseline): {best_val_loss_baseline}')
+
+        loss, acc = env.alrs.test()
+        print(f'Test loss: {loss}\nTest accuracy: {acc}')
 
         return best_val_loss
 
